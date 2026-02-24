@@ -6,6 +6,7 @@ const config: Config = {
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   testMatch: ['**/*.test.ts'],
+  setupFiles: ['<rootDir>/tests/jest.setup.ts'],
   clearMocks: true
 };
 

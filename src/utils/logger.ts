@@ -1,9 +1,9 @@
 import { createLogger, format, transports } from 'winston';
 
-import { appConfig } from '../config/env';
+import { config } from '../config';
 
 export const logger = createLogger({
-  level: appConfig.logLevel,
+  level: config.logging.level,
   format: format.combine(format.timestamp(), format.errors({ stack: true }), format.json()),
   defaultMeta: { service: 'bharatvoice-api' },
   transports: [new transports.Console()]

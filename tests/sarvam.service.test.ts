@@ -203,4 +203,126 @@ describe('SarvamService', () => {
     expect(body.speaker).toBe('Ritu');
     expect(body.output_audio_codec).toBe('wav');
   });
+
+  it('fails after 3 retryable ASR API errors and applies exponential backoff', async () => {
+    const sleepFn = jest.fn<Promise<void>, [number]>().mockResolvedValue(undefined);
+    const fetchMock = jest
+      .fn<Promise<Response>, [string | URL | Request, RequestInit?]>()
+      .mockImplementationOnce(async () => {
+        return new Response(new Uint8Array([9, 9, 9]), {
+          status: 200,
+          headers: { 'content-type': 'audio/wav' }
+        });
+      })
+      .mockImplementationOnce(async () =>
+        createJsonResponse({ error: { message: 'busy', code: 'temporary', request_id: 'r1' } }, { status: 503 })
+      )
+      .mockImplementationOnce(async () =>
+        createJsonResponse({ error: { message: 'busy', code: 'temporary', request_id: 'r2' } }, { status: 503 })
+      )
+      .mockImplementationOnce(async () =>
+        createJsonResponse({ error: { message: 'busy', code: 'temporary', request_id: 'r3' } }, { status: 503 })
+      );
+
+    const sarvamService = new SarvamService({
+      fetchFn: fetchMock as unknown as typeof fetch,
+      sleepFn
+    });
+
+    await expect(
+      sarvamService.transcribeAudio('https://cdn.example.com/audio/retry-exhaust.wav', 'hi-en')
+    ).rejects.toThrow('busy');
+
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(sleepFn).toHaveBeenCalledTimes(2);
+    expect(sleepFn).toHaveBeenNthCalledWith(1, 300);
+    expect(sleepFn).toHaveBeenNthCalledWith(2, 600);
+  });
+
+  it('does not retry non-retryable ASR API errors', async () => {
+    const sleepFn = jest.fn<Promise<void>, [number]>().mockResolvedValue(undefined);
+    const fetchMock = jest
+      .fn<Promise<Response>, [string | URL | Request, RequestInit?]>()
+      .mockImplementationOnce(async () => {
+        return new Response(new Uint8Array([1, 2, 3]), {
+          status: 200,
+          headers: { 'content-type': 'audio/wav' }
+        });
+      })
+      .mockImplementationOnce(async () =>
+        createJsonResponse(
+          {
+            error: {
+              message: 'Invalid API key',
+              code: 'authentication_error',
+              request_id: 'auth-1'
+            }
+          },
+          { status: 401 }
+        )
+      );
+
+    const sarvamService = new SarvamService({
+      fetchFn: fetchMock as unknown as typeof fetch,
+      sleepFn
+    });
+
+    await expect(
+      sarvamService.transcribeAudio('https://cdn.example.com/audio/non-retryable.wav', 'hi-en')
+    ).rejects.toThrow('Invalid API key');
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(sleepFn).not.toHaveBeenCalled();
+  });
+
+  it('fails after 3 retryable TTS API errors and applies exponential backoff', async () => {
+    const sleepFn = jest.fn<Promise<void>, [number]>().mockResolvedValue(undefined);
+    const fetchMock = jest
+      .fn<Promise<Response>, [string | URL | Request, RequestInit?]>()
+      .mockImplementationOnce(async () =>
+        createJsonResponse({ error: { message: 'busy', code: 'temporary', request_id: 't1' } }, { status: 503 })
+      )
+      .mockImplementationOnce(async () =>
+        createJsonResponse({ error: { message: 'busy', code: 'temporary', request_id: 't2' } }, { status: 503 })
+      )
+      .mockImplementationOnce(async () =>
+        createJsonResponse({ error: { message: 'busy', code: 'temporary', request_id: 't3' } }, { status: 503 })
+      );
+
+    const sarvamService = new SarvamService({
+      fetchFn: fetchMock as unknown as typeof fetch,
+      sleepFn
+    });
+
+    await expect(sarvamService.synthesizeSpeech('Namaste ji', 'pavitra')).rejects.toThrow('busy');
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(sleepFn).toHaveBeenCalledTimes(2);
+    expect(sleepFn).toHaveBeenNthCalledWith(1, 300);
+    expect(sleepFn).toHaveBeenNthCalledWith(2, 600);
+  });
+
+  it('does not retry invalid TTS success payloads', async () => {
+    const sleepFn = jest.fn<Promise<void>, [number]>().mockResolvedValue(undefined);
+    const fetchMock = jest
+      .fn<Promise<Response>, [string | URL | Request, RequestInit?]>()
+      .mockImplementationOnce(async () =>
+        createJsonResponse({
+          request_id: 'tts-invalid-1',
+          audios: []
+        })
+      );
+
+    const sarvamService = new SarvamService({
+      fetchFn: fetchMock as unknown as typeof fetch,
+      sleepFn
+    });
+
+    await expect(sarvamService.synthesizeSpeech('Namaste ji', 'meera')).rejects.toThrow(
+      'Sarvam TTS response did not contain a valid audios array.'
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sleepFn).not.toHaveBeenCalled();
+  });
 });

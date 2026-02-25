@@ -76,6 +76,48 @@ describe('ExotelService', () => {
     });
   });
 
+  it('parses recording callback payload using RecordingUrlMp3 fallback', () => {
+    const recordingEvent = exotelService.parseRecordingWebhook({
+      CallSid: 'call-rec-mp3-1',
+      RecordingUrlMp3: 'https://api.exotel.com/recordings/call-rec-mp3-1.mp3'
+    });
+
+    expect(recordingEvent).toEqual({
+      callSid: 'call-rec-mp3-1',
+      recordingUrl: 'https://api.exotel.com/recordings/call-rec-mp3-1.mp3',
+      from: undefined,
+      to: undefined,
+      direction: undefined
+    });
+  });
+
+  it.each([
+    { raw: 'completed', expected: 'completed' },
+    { raw: 'FAILED', expected: 'failed' }
+  ])('normalizes status callback from Status field ($raw)', ({ raw, expected }) => {
+    const statusEvent = exotelService.parseCallStatusWebhook({
+      CallSid: `call-status-${raw}`,
+      Status: raw
+    });
+
+    expect(statusEvent.status).toBe(expected);
+    expect(statusEvent.rawStatus).toBe(raw);
+  });
+
+  it('ignores extra unknown fields in webhook payloads', () => {
+    const incoming = exotelService.parseIncomingCallWebhook({
+      CallSid: 'call-extra-1',
+      From: '+919876543210',
+      To: '+918888777766',
+      Direction: 'incoming',
+      RandomField: 'ignore-me',
+      Nested: { foo: 'bar' }
+    });
+
+    expect(incoming.callSid).toBe('call-extra-1');
+    expect(incoming.direction).toBe('incoming');
+  });
+
   it('builds ExoML record and play responses', () => {
     const recordResponse = exotelService.buildRecordResponse({
       prompt: 'Kripya boliye',

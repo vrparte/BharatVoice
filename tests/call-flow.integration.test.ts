@@ -203,4 +203,84 @@ describe('Echo bot call flow integration', () => {
       })
     );
   });
+
+  it('plays fallback Hindi message when TTS synthesis fails after ASR succeeds', async () => {
+    const sarvamServiceMock = {
+      transcribeAudio: jest.fn<Promise<string>, [string, 'hi-en' | 'mr-hi']>().mockResolvedValue('main Rahul bol raha hoon')
+    } as unknown as SarvamService;
+    const voiceServiceMock = {
+      synthesizeSpeech: jest
+        .fn<Promise<Buffer>, [string, 'meera' | 'pavitra']>()
+        .mockRejectedValue(new Error('TTS down')),
+      getAudioContentType: jest.fn<'audio/wav', []>().mockReturnValue('audio/wav')
+    } as unknown as VoiceService;
+
+    const controller = createCallFlowController({
+      callFlowService: new CallFlowService({
+        exotelService: new ExotelService(),
+        sarvamService: sarvamServiceMock,
+        voiceService: voiceServiceMock
+      })
+    });
+
+    const req = createMockRequest({
+      body: {
+        CallSid: 'call-fallback-tts-1',
+        RecordingUrl: 'https://api.exotel.com/v1/recordings/call-fallback-tts-1.wav'
+      }
+    });
+    const res = createMockResponse();
+
+    await controller.handleRecordingCallbackWebhook(req, res.res);
+
+    expect(res.statusMock).toHaveBeenCalledWith(200);
+    const xml = res.sendMock.mock.calls[0][0] as string;
+    expect(xml).toContain('<Say>');
+    expect(xml).toContain('Maaf kijiye');
+    expect(sarvamServiceMock.transcribeAudio).toHaveBeenCalled();
+    expect(voiceServiceMock.synthesizeSpeech).toHaveBeenCalledWith(
+      'Aapne kaha: main Rahul bol raha hoon',
+      'meera'
+    );
+    expect(logger.error).toHaveBeenCalledWith(
+      'Echo bot call flow failed, using fallback message',
+      expect.objectContaining({
+        eventType: 'call_flow.error',
+        callSid: 'call-fallback-tts-1'
+      })
+    );
+  });
+
+  it('expires stored playback audio after TTL', () => {
+    const nowFn = jest
+      .fn<number, []>()
+      .mockReturnValueOnce(1000)
+      .mockReturnValueOnce(1001)
+      .mockReturnValueOnce(1000 + 10 * 60 * 1000 + 1);
+    const voiceServiceMock = {
+      synthesizeSpeech: jest.fn<Promise<Buffer>, [string, 'meera' | 'pavitra']>(),
+      getAudioContentType: jest.fn<'audio/wav', []>().mockReturnValue('audio/wav')
+    } as unknown as VoiceService;
+
+    const callFlowService = new CallFlowService({
+      exotelService: new ExotelService(),
+      sarvamService: {} as SarvamService,
+      voiceService: voiceServiceMock,
+      nowFn,
+      idGenerator: () => 'audio-expire-1'
+    });
+
+    callFlowService.storePlaybackAudioWithBaseUrl({
+      callSid: 'call-expire-1',
+      audio: Buffer.from([1, 2, 3]),
+      responseText: 'Aapne kaha: test',
+      playbackBaseUrl: 'https://example.com/media/call-audio'
+    });
+
+    const immediate = callFlowService.getPlaybackAudio('audio-expire-1');
+    expect(immediate).toBeDefined();
+
+    const expired = callFlowService.getPlaybackAudio('audio-expire-1');
+    expect(expired).toBeUndefined();
+  });
 });

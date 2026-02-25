@@ -7,7 +7,7 @@ module.exports = {
   },
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: './tsconfig.json',
+    project: './tsconfig.eslint.json',
     sourceType: 'module'
   },
   plugins: ['@typescript-eslint', 'import'],
@@ -33,5 +33,17 @@ module.exports = {
       }
     ]
   },
+  overrides: [
+    {
+      files: ['tests/**/*.ts'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        '@typescript-eslint/no-unsafe-assignment': 'off',
+        '@typescript-eslint/no-unsafe-member-access': 'off',
+        '@typescript-eslint/require-await': 'off',
+        '@typescript-eslint/unbound-method': 'off'
+      }
+    }
+  ],
   ignorePatterns: ['dist/', 'node_modules/']
 };

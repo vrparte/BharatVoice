@@ -13,6 +13,10 @@ interface ICallFlowControllerDependencies {
   readonly callFlowService?: CallFlowService;
 }
 
+const getRequestBody = (req: Request): unknown => {
+  return req.body as unknown;
+};
+
 const buildAbsoluteUrl = (req: Request, path: string): string => {
   const protocolHeader = req.headers['x-forwarded-proto'];
   const protocol = typeof protocolHeader === 'string' ? protocolHeader.split(',')[0] : req.protocol;
@@ -35,7 +39,7 @@ export const createCallFlowController = (
     try {
       const recordingActionUrl = buildAbsoluteUrl(req, '/webhook/call-recording');
       const result = callFlowService.startEchoBotCall({
-        payload: req.body,
+        payload: getRequestBody(req),
         recordingActionUrl
       });
 
@@ -47,7 +51,7 @@ export const createCallFlowController = (
         eventType: 'call_flow.start.invalid_payload',
         provider: 'exotel',
         error: errorMessage,
-        exotelPayload: req.body
+        exotelPayload: getRequestBody(req)
       });
 
       res.status(400).json({
@@ -61,7 +65,7 @@ export const createCallFlowController = (
     try {
       const playbackBaseUrl = buildAbsoluteUrl(req, '/media/call-audio');
       const result = await callFlowService.handleRecordingAndGeneratePlayback({
-        payload: req.body,
+        payload: getRequestBody(req),
         playbackBaseUrl
       });
 
@@ -74,7 +78,7 @@ export const createCallFlowController = (
         eventType: 'call_flow.recording.error',
         provider: 'exotel',
         error: errorMessage,
-        exotelPayload: req.body
+        exotelPayload: getRequestBody(req)
       });
 
       res.status(isPayloadError ? 400 : 500).json({

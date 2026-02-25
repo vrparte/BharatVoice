@@ -117,7 +117,7 @@ const parseSarvamSuccessBody = async (response: Response): Promise<ISarvamSpeech
     });
   }
 
-  const transcript = 'transcript' in parsedJson ? (parsedJson.transcript as unknown) : undefined;
+  const transcript = 'transcript' in parsedJson ? parsedJson.transcript : undefined;
 
   if (typeof transcript !== 'string' || transcript.trim().length === 0) {
     throw new SarvamApiError('Sarvam STT response did not contain a valid transcript.', {
@@ -164,9 +164,18 @@ const parseSarvamTtsSuccessBody = async (response: Response): Promise<ISarvamTex
     });
   }
 
-  const audios = 'audios' in parsedJson ? (parsedJson.audios as unknown) : undefined;
+  const rawAudios = 'audios' in parsedJson ? parsedJson.audios : undefined;
 
-  if (!Array.isArray(audios) || audios.length === 0 || audios.some((item) => typeof item !== 'string')) {
+  if (!Array.isArray(rawAudios) || rawAudios.length === 0) {
+    throw new SarvamApiError('Sarvam TTS response did not contain a valid audios array.', {
+      statusCode: response.status,
+      retryable: false
+    });
+  }
+
+  const audios = rawAudios.filter((item): item is string => typeof item === 'string');
+
+  if (audios.length !== rawAudios.length) {
     throw new SarvamApiError('Sarvam TTS response did not contain a valid audios array.', {
       statusCode: response.status,
       retryable: false
@@ -304,7 +313,8 @@ export class SarvamService {
           output_audio_codec: 'wav'
         });
 
-        const audioBuffer = decodeBase64Audio(ttsResponse.audios[0]);
+        const firstAudio = ttsResponse.audios[0];
+        const audioBuffer = decodeBase64Audio(firstAudio);
 
         logger.info('Sarvam TTS synthesis succeeded', {
           eventType: 'sarvam.tts.success',

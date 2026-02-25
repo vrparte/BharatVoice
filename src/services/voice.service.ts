@@ -1,8 +1,9 @@
 import { createHash } from 'crypto';
 
-import { SarvamService } from './sarvam.service';
 import type { ISarvamTtsVoice } from '../types/sarvam.types';
 import { logger } from '../utils/logger';
+
+import { SarvamService } from './sarvam.service';
 
 interface IVoiceCacheEntry {
   readonly audio: Buffer;
@@ -104,9 +105,8 @@ export class VoiceService {
 
   private evictIfNeeded(): void {
     while (this.cache.size > MAX_CACHE_ENTRIES) {
-      const oldestKey = this.cache.keys().next().value as string | undefined;
-
-      if (!oldestKey) {
+      const oldestKey = this.cache.keys().next().value;
+      if (typeof oldestKey !== 'string') {
         return;
       }
 

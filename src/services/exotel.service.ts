@@ -92,9 +92,9 @@ export class ExotelService {
     }
 
     return {
-      callSid: readString(payload, 'CallSid') as string,
-      from: readString(payload, 'From') as string,
-      to: readString(payload, 'To') as string,
+      callSid: readString(payload, 'CallSid')!,
+      from: readString(payload, 'From')!,
+      to: readString(payload, 'To')!,
       direction: normalizeDirection(rawDirection),
       rawDirection
     };
@@ -149,7 +149,7 @@ export class ExotelService {
     const rawDirection = readString(payload, 'Direction');
 
     return {
-      callSid: readString(payload, 'CallSid') as string,
+      callSid: readString(payload, 'CallSid')!,
       recordingUrl,
       from: readString(payload, 'From'),
       to: readString(payload, 'To'),

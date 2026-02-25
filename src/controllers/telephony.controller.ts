@@ -1,11 +1,16 @@
 import type { Request, Response } from 'express';
 
-import { handleCallStartWebhook } from './call-flow.controller';
 import { ExotelService } from '../services/exotel.service';
 import { logger } from '../utils/logger';
 
+import { handleCallStartWebhook } from './call-flow.controller';
+
 const exotelService = new ExotelService();
 const INCOMING_CALL_ACK_MESSAGE = 'Hello, your call is received';
+
+const getRequestBody = (req: Request): unknown => {
+  return req.body as unknown;
+};
 
 const prefersJsonResponse = (req: Request): boolean => {
   const formatQuery = typeof req.query.format === 'string' ? req.query.format.toLowerCase() : undefined;
@@ -57,7 +62,7 @@ export const handleIncomingCallWebhookLegacy = (req: Request, res: Response): vo
       eventType: 'telephony.call.invalid_payload',
       provider: 'exotel',
       error: errorMessage,
-      exotelPayload: req.body
+      exotelPayload: getRequestBody(req)
     });
 
     res.status(400).json({
@@ -81,7 +86,7 @@ export const handleCallStatusCallback = (req: Request, res: Response): void => {
       to: callStatusEvent.to,
       direction: callStatusEvent.direction,
       statusCallbackEvent: callStatusEvent.statusCallbackEvent,
-      exotelPayload: req.body
+      exotelPayload: getRequestBody(req)
     });
 
     res.status(200).json({
@@ -97,7 +102,7 @@ export const handleCallStatusCallback = (req: Request, res: Response): void => {
       eventType: 'telephony.call.status_invalid_payload',
       provider: 'exotel',
       error: errorMessage,
-      exotelPayload: req.body
+      exotelPayload: getRequestBody(req)
     });
 
     res.status(400).json({

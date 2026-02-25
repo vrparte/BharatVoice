@@ -40,7 +40,7 @@ const collectBvEnv = (env: NodeJS.ProcessEnv): Record<string, string> => {
   );
 };
 
-const formatZodError = (error: { issues: Array<{ path: Array<string | number>; message: string }> }): string => {
+const formatZodError = (error: { issues: { path: (string | number)[]; message: string }[] }): string => {
   const details = error.issues.map((issue) => {
     const path = issue.path.length > 0 ? issue.path.join('.') : 'environment';
     return `- ${path}: ${issue.message}`;

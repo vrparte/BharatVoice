@@ -1,10 +1,11 @@
 import { randomUUID } from 'crypto';
 
+import type { ICallPlaybackAudio } from '../types/call.types';
+import { logger } from '../utils/logger';
+
 import { ExotelService } from './exotel.service';
 import { SarvamService } from './sarvam.service';
 import { VoiceService } from './voice.service';
-import type { ICallPlaybackAudio } from '../types/call.types';
-import { logger } from '../utils/logger';
 
 interface ICallFlowServiceDependencies {
   readonly exotelService?: ExotelService;
@@ -37,7 +38,7 @@ interface IStoredPlaybackAudioResult {
   readonly playbackUrl: string;
 }
 
-interface IPlaybackStoreEntry extends ICallPlaybackAudio {}
+type IPlaybackStoreEntry = ICallPlaybackAudio;
 
 const PLAYBACK_CACHE_TTL_MS = 10 * 60 * 1000;
 const PLAYBACK_CACHE_MAX_ENTRIES = 200;
@@ -210,9 +211,8 @@ export class CallFlowService {
 
   private evictIfNeeded(): void {
     while (this.playbackStore.size > PLAYBACK_CACHE_MAX_ENTRIES) {
-      const oldestKey = this.playbackStore.keys().next().value as string | undefined;
-
-      if (!oldestKey) {
+      const oldestKey = this.playbackStore.keys().next().value;
+      if (typeof oldestKey !== 'string') {
         return;
       }
 

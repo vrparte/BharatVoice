@@ -31,7 +31,9 @@ app.get('/', (_req: Request, res: Response): void => {
 
 app.get('/health', getHealthController);
 app.post('/webhook/call-start', handleCallStartWebhook);
-app.post('/webhook/call-recording', handleRecordingCallbackWebhook);
+app.post('/webhook/call-recording', (req: Request, res: Response): void => {
+  void handleRecordingCallbackWebhook(req, res);
+});
 app.post('/webhook/incoming-call', handleIncomingCallWebhook);
 app.post('/webhook/call-status', handleCallStatusCallback);
 app.get('/media/call-audio/:audioId', handlePlaybackAudioRequest);

@@ -23,13 +23,13 @@ const INITIAL_RETRY_DELAY_MS = 300;
 const SARVAM_VOICE_PROFILES: Readonly<Record<ISarvamTtsVoice, ISarvamVoiceProfile>> = {
   meera: {
     appVoice: 'meera',
-    sarvamSpeaker: 'Ritu',
+    sarvamSpeaker: 'ritu',
     voiceId: 'bv-meera-bulbul-v3',
     targetLanguageCode: 'hi-IN'
   },
   pavitra: {
     appVoice: 'pavitra',
-    sarvamSpeaker: 'Priya',
+    sarvamSpeaker: 'priya',
     voiceId: 'bv-pavitra-bulbul-v3',
     targetLanguageCode: 'hi-IN'
   }

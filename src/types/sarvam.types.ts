@@ -3,7 +3,7 @@ export type ISarvamBcp47LanguageCode = 'hi-IN' | 'mr-IN';
 export type ISarvamSpeechToTextMode = 'codemix';
 export type ISarvamSpeechToTextModel = 'saaras:v3';
 export type ISarvamTtsVoice = 'meera' | 'pavitra';
-export type ISarvamBulbulSpeaker = 'Ritu' | 'Priya';
+export type ISarvamBulbulSpeaker = 'ritu' | 'priya';
 export type ISarvamTtsModel = 'bulbul:v3';
 export type ISarvamOutputAudioCodec = 'wav';
 

@@ -1,0 +1,21 @@
+config:
+  target: "ws://localhost:3001"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 25
+      name: "Sustained load"
+  engines:
+    ws: {}
+
+scenarios:
+  - name: "Web demo websocket conversation"
+    engine: ws
+    flow:
+      - connect:
+          url: "/ws/voice?vertical=dental"
+      - send: '{"type":"init","vertical":"dental"}'
+      - send: '{"type":"transcript","text":"Mera naam Rahul hai, appointment chahiye","vertical":"dental"}'
+      - think: 1

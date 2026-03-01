@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BharatVoice | AI Receptionist for Indian Businesses</title>
+    <meta
+      name="description"
+      content="BharatVoice helps Indian clinics, garages, and law offices answer every call with a Hinglish AI receptionist."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <div class="brand">BharatVoice</div>
+        <a class="btn btn-light" href="#cta">Start Free Trial</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="shell hero-grid">
+          <div>
+            <p class="eyebrow">Voice AI for Bharat</p>
+            <h1>AI Receptionist for Indian Businesses</h1>
+            <p class="lead">
+              Stop losing leads after office hours. BharatVoice answers calls, understands Hinglish, and replies in
+              natural voice for your business.
+            </p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="#cta">Start Free Trial</a>
+              <a class="btn btn-ghost" href="#demo">Try Live Demo</a>
+            </div>
+          </div>
+          <div class="hero-card">
+            <h2>Live Voice Demo</h2>
+            <p>Speak a transcript and hear real-time AI voice response.</p>
+            <iframe
+              title="BharatVoice Demo"
+              loading="lazy"
+              src="/demo"
+              class="demo-frame"
+              referrerpolicy="no-referrer"
+            ></iframe>
+          </div>
+        </div>
+      </section>
+
+      <section class="problem section">
+        <div class="shell">
+          <h2>Missed Calls = Lost Revenue</h2>
+          <div class="stats">
+            <article class="stat-card">
+              <h3>6.45 crore</h3>
+              <p>MSMEs registered in India, where every incoming enquiry call matters.</p>
+            </article>
+            <article class="stat-card">
+              <h3>11.1 crore</h3>
+              <p>People employed by MSMEs, showing the scale of service businesses needing call handling.</p>
+            </article>
+            <article class="stat-card">
+              <h3>1,090.91 million</h3>
+              <p>Active wireless subscribers in India, a massive inbound-call opportunity for local businesses.</p>
+            </article>
+          </div>
+          <p class="source-note">
+            Sources: Ministry of MSME (RAMP portal, June 11, 2025) and TRAI telecom subscription release (November 30,
+            2025).
+          </p>
+        </div>
+      </section>
+
+      <section class="solution section">
+        <div class="shell">
+          <h2>How It Works</h2>
+          <div class="flow">
+            <div class="flow-step">
+              <span>1</span>
+              <h3>Call</h3>
+              <p>Customer calls your number.</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <span>2</span>
+              <h3>AI</h3>
+              <p>BharatVoice listens, understands, and responds in Hinglish.</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <span>3</span>
+              <h3>Booking</h3>
+              <p>Qualified lead captured and pushed to your workflow.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="demo" class="demo section">
+        <div class="shell">
+          <h2>Live Demo</h2>
+          <p class="lead-small">Test the same voice stack used in telephony mode.</p>
+          <iframe
+            title="BharatVoice Full Demo"
+            loading="lazy"
+            src="/demo"
+            class="demo-frame full"
+            referrerpolicy="no-referrer"
+          ></iframe>
+        </div>
+      </section>
+
+      <section class="verticals section">
+        <div class="shell">
+          <h2>Built for Indian Service Verticals</h2>
+          <div class="tab-head" role="tablist" aria-label="Verticals">
+            <button class="tab-btn active" data-tab="dental" role="tab" aria-selected="true">Dental</button>
+            <button class="tab-btn" data-tab="auto" role="tab" aria-selected="false">Auto</button>
+            <button class="tab-btn" data-tab="legal" role="tab" aria-selected="false">Legal</button>
+          </div>
+          <div class="tab-panel active" id="tab-dental" role="tabpanel">
+            <ul>
+              <li>Appointment enquiry capture</li>
+              <li>Clinic timings and doctor availability responses</li>
+              <li>Follow-up callback scheduling</li>
+            </ul>
+          </div>
+          <div class="tab-panel" id="tab-auto" role="tabpanel">
+            <ul>
+              <li>Service booking intent handling</li>
+              <li>Pickup/drop query support</li>
+              <li>Job-card callback request capture</li>
+            </ul>
+          </div>
+          <div class="tab-panel" id="tab-legal" role="tabpanel">
+            <ul>
+              <li>Case intake pre-screening</li>
+              <li>Consultation slot request collection</li>
+              <li>Document callback follow-up routing</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="pricing section">
+        <div class="shell">
+          <h2>Simple Pricing</h2>
+          <div class="pricing-card">
+            <p class="price"><span>₹2,999</span>/month</p>
+            <p>Compared to ~₹15,000/month for one human receptionist shift.</p>
+            <a class="btn btn-primary" href="#cta">Start Free Trial</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="cta" class="cta section">
+        <div class="shell cta-box">
+          <h2>Start Free Trial</h2>
+          <p>Enter your phone number and we will call you back with a setup walkthrough.</p>
+          <form id="callbackForm" class="callback-form">
+            <input
+              id="phoneInput"
+              type="tel"
+              inputmode="numeric"
+              pattern="[0-9]{10}"
+              placeholder="Enter 10-digit mobile number"
+              required
+              aria-label="Phone number"
+            />
+            <button class="btn btn-primary" type="submit">Request Callback</button>
+          </form>
+          <p id="callbackMsg" class="callback-msg" aria-live="polite"></p>
+        </div>
+      </section>
+    </main>
+
+    <script src="./landing.js" defer></script>
+  </body>
+</html>

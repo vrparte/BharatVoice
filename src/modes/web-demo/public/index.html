@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BharatVoice Web Demo</title>
+    <link rel="stylesheet" href="/demo/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>BharatVoice Voice Demo</h1>
+      <p class="subtitle">WebSocket transport demo for Hinglish echo flow</p>
+
+      <section class="card">
+        <div class="row">
+          <label for="vertical">Vertical</label>
+          <select id="vertical">
+            <option value="dental">dental</option>
+            <option value="auto">auto</option>
+            <option value="legal">legal</option>
+          </select>
+        </div>
+
+        <div class="row">
+          <label for="transcript">Transcript</label>
+          <textarea id="transcript" rows="3" placeholder="Type Hinglish transcript..."></textarea>
+        </div>
+
+        <div class="actions">
+          <button id="connectBtn" type="button">Connect</button>
+          <button id="sendBtn" type="button">Send Transcript</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Response</h2>
+        <pre id="responseText">No response yet</pre>
+        <audio id="audioPlayer" controls></audio>
+      </section>
+
+      <section class="card">
+        <h2>Logs</h2>
+        <pre id="logs"></pre>
+      </section>
+    </main>
+    <script src="/demo/demo.js" defer></script>
+  </body>
+</html>

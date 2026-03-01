@@ -1,0 +1,64 @@
+version: '3.9'
+
+services:
+  telephony:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    volumes:
+      - ./:/app
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      BV_PORT: 3000
+      BV_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bharatvoice
+      BV_SARVAM_API_KEY: ${BV_SARVAM_API_KEY}
+      BV_EXOTEL_SID: ${BV_EXOTEL_SID}
+      BV_EXOTEL_TOKEN: ${BV_EXOTEL_TOKEN}
+      BV_LOG_LEVEL: ${BV_LOG_LEVEL:-info}
+    depends_on:
+      - postgres
+
+  demo:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev:web-demo"
+    volumes:
+      - ./:/app
+    ports:
+      - '3001:3001'
+    profiles:
+      - demo
+    environment:
+      NODE_ENV: development
+      BV_PORT: 3000
+      BV_DEMO_MODE: ${BV_DEMO_MODE:-standalone}
+      BV_DEMO_WS_PORT: 3001
+      BV_DEMO_TTL_MINUTES: ${BV_DEMO_TTL_MINUTES:-60}
+      BV_DEMO_MAX_CONCURRENT: ${BV_DEMO_MAX_CONCURRENT:-100}
+      BV_ANALYTICS_PROVIDER: ${BV_ANALYTICS_PROVIDER:-console}
+      BV_CORS_ORIGINS: ${BV_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      BV_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bharatvoice
+      BV_SARVAM_API_KEY: ${BV_SARVAM_API_KEY}
+      BV_EXOTEL_SID: ${BV_EXOTEL_SID}
+      BV_EXOTEL_TOKEN: ${BV_EXOTEL_TOKEN}
+      BV_LOG_LEVEL: ${BV_LOG_LEVEL:-info}
+      BV_GA4_MEASUREMENT_ID: ${BV_GA4_MEASUREMENT_ID:-}
+      BV_GA4_API_SECRET: ${BV_GA4_API_SECRET:-}
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bharatvoice
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

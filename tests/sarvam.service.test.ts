@@ -200,7 +200,7 @@ describe('SarvamService', () => {
     const body = JSON.parse((apiCall.init?.body as string) ?? '{}') as Record<string, unknown>;
     expect(body.model).toBe('bulbul:v3');
     expect(body.target_language_code).toBe('hi-IN');
-    expect(body.speaker).toBe('Ritu');
+    expect(body.speaker).toBe('ritu');
     expect(body.output_audio_codec).toBe('wav');
   });
 });

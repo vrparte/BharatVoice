@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 
+import { VoiceAgentCoreService } from '../core/voice-agent-core.service';
 import type { ICallPlaybackAudio } from '../types/call.types';
 import { logger } from '../utils/logger';
 
@@ -11,6 +12,7 @@ interface ICallFlowServiceDependencies {
   readonly exotelService?: ExotelService;
   readonly sarvamService?: SarvamService;
   readonly voiceService?: VoiceService;
+  readonly coreService?: VoiceAgentCoreService;
   readonly nowFn?: () => number;
   readonly idGenerator?: () => string;
 }
@@ -49,6 +51,7 @@ export class CallFlowService {
   private readonly exotelService: ExotelService;
   private readonly sarvamService: SarvamService;
   private readonly voiceService: VoiceService;
+  private readonly coreService: VoiceAgentCoreService;
   private readonly nowFn: () => number;
   private readonly idGenerator: () => string;
   private readonly playbackStore = new Map<string, IPlaybackStoreEntry>();
@@ -57,6 +60,11 @@ export class CallFlowService {
     this.exotelService = dependencies?.exotelService ?? new ExotelService();
     this.sarvamService = dependencies?.sarvamService ?? new SarvamService();
     this.voiceService = dependencies?.voiceService ?? new VoiceService();
+    this.coreService =
+      dependencies?.coreService ??
+      new VoiceAgentCoreService({
+        voiceService: this.voiceService
+      });
     this.nowFn = dependencies?.nowFn ?? Date.now;
     this.idGenerator = dependencies?.idGenerator ?? randomUUID;
   }
@@ -94,10 +102,16 @@ export class CallFlowService {
     try {
       const transcription = await this.sarvamService.transcribeAudio(recordingEvent.recordingUrl, 'hi-en');
       const asrCompletedAtMs = this.nowFn();
-      const responseText = `Aapne kaha: ${transcription}`;
 
       const ttsStartedAtMs = this.nowFn();
-      const audioBuffer = await this.voiceService.synthesizeSpeech(responseText, 'meera');
+      const coreResult = await this.coreService.handleTranscript({
+        transcript: transcription,
+        vertical: 'dental',
+        sessionId: recordingEvent.callSid,
+        history: []
+      });
+      const responseText = coreResult.text;
+      const audioBuffer = coreResult.audio;
       const ttsCompletedAtMs = this.nowFn();
 
       const playback = this.storePlaybackAudioWithBaseUrl({

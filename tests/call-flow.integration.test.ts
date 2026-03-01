@@ -86,7 +86,8 @@ describe('Echo bot call flow integration', () => {
     } as unknown as SarvamService;
     const voiceServiceMock = {
       synthesizeSpeech: jest.fn<Promise<Buffer>, [string, 'meera' | 'pavitra']>().mockResolvedValue(ttsAudio),
-      getAudioContentType: jest.fn<'audio/wav', []>().mockReturnValue('audio/wav')
+      getAudioContentType: jest.fn<'audio/wav', []>().mockReturnValue('audio/wav'),
+      getVoiceId: jest.fn<string, ['meera' | 'pavitra']>().mockReturnValue('bv-meera-bulbul-v3')
     } as unknown as VoiceService;
 
     const callFlowService = new CallFlowService({
@@ -169,7 +170,8 @@ describe('Echo bot call flow integration', () => {
     } as unknown as SarvamService;
     const voiceServiceMock = {
       synthesizeSpeech: jest.fn<Promise<Buffer>, [string, 'meera' | 'pavitra']>(),
-      getAudioContentType: jest.fn<'audio/wav', []>().mockReturnValue('audio/wav')
+      getAudioContentType: jest.fn<'audio/wav', []>().mockReturnValue('audio/wav'),
+      getVoiceId: jest.fn<string, ['meera' | 'pavitra']>().mockReturnValue('bv-meera-bulbul-v3')
     } as unknown as VoiceService;
 
     const controller = createCallFlowController({

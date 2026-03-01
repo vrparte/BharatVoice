@@ -69,3 +69,6 @@ All env vars must start with `BV_` (BharatVoice):
 - `docs/CONTEXT.md` - Session summaries (maintain this!)
 - `docs/API_REFERENCE.md` - External API docs summary
 - `docs/DECISIONS.md` - Architecture decisions with rationale
+
+
+# There has been a pivot: Now we are also providing a web based demo for clients to visit the website and mAke a really short conversation with the AI Agent and listen to its replies. 

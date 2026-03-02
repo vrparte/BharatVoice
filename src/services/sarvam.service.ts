@@ -210,6 +210,19 @@ const decodeBase64Audio = (audioBase64: string): Buffer => {
   }
 };
 
+const normalizeMimeType = (mimeType: string | undefined): string => {
+  const normalized = (mimeType ?? '').trim().toLowerCase();
+  if (normalized.length === 0) {
+    return 'audio/webm';
+  }
+
+  const semicolonIndex = normalized.indexOf(';');
+  if (semicolonIndex === -1) {
+    return normalized;
+  }
+  return normalized.slice(0, semicolonIndex).trim();
+};
+
 export class SarvamService {
   private readonly fetchFn: typeof fetch;
   private readonly sleepFn: (ms: number) => Promise<void>;
@@ -227,6 +240,33 @@ export class SarvamService {
     }
 
     const downloadedAudio = await downloadAudioFromUrl(audioUrl, this.fetchFn);
+    return this.transcribeAudioBlob(downloadedAudio.blob, downloadedAudio.fileName, language);
+  }
+
+  public async transcribeAudioBuffer(
+    audioBuffer: Buffer,
+    language: ISarvamAsrLanguage,
+    options?: {
+      readonly fileName?: string;
+      readonly mimeType?: string;
+    }
+  ): Promise<string> {
+    if (!Buffer.isBuffer(audioBuffer) || audioBuffer.length === 0) {
+      throw new Error('Sarvam transcription requires a non-empty audio buffer.');
+    }
+
+    const fileName = options?.fileName ?? 'web-demo-audio.webm';
+    const mimeType = normalizeMimeType(options?.mimeType);
+    const blobBytes = new Uint8Array(audioBuffer);
+    const blob = new Blob([blobBytes], { type: mimeType });
+    return this.transcribeAudioBlob(blob, fileName, language);
+  }
+
+  private async transcribeAudioBlob(
+    audioBlob: Blob,
+    fileName: string,
+    language: ISarvamAsrLanguage
+  ): Promise<string> {
     const mappedLanguageCode = mapLanguageCode(language);
 
     for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
@@ -234,8 +274,8 @@ export class SarvamService {
 
       try {
         const transcriptResponse = await this.requestTranscription({
-          file: downloadedAudio.blob,
-          fileName: downloadedAudio.fileName,
+          file: audioBlob,
+          fileName,
           languageCode: mappedLanguageCode
         });
 

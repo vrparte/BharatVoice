@@ -6,6 +6,8 @@ import type { WebSocket } from 'ws';
 
 import { createVerticalService, detectVerticalFromLanguage } from '../../core/verticals';
 import type { ICoreConversationMessage, VoiceAgentCoreService } from '../../core/voice-agent-core.service';
+import { SarvamService } from '../../services/sarvam.service';
+import type { ISarvamAsrLanguage } from '../../types/sarvam.types';
 
 import type { WebDemoAnalyticsTracker } from './analytics';
 import { webDemoConfig } from './config';
@@ -22,6 +24,7 @@ interface IWebSocketHandlerDependencies {
   readonly sessionStore: WebDemoSessionStore;
   readonly errorManager: WebDemoErrorManager;
   readonly analytics: WebDemoAnalyticsTracker;
+  readonly sarvamService?: SarvamService;
 }
 
 type IAudioFormat = 'wav' | 'mp3' | 'ogg';
@@ -58,6 +61,16 @@ interface IAnalyticsClientMessage {
   };
 }
 
+interface IAudioInputMessage {
+  readonly type?: 'audio_input' | 'audio' | 'voice_input';
+  readonly sessionId?: string;
+  readonly vertical?: IWebDemoVertical;
+  readonly mimeType?: string;
+  readonly fileName?: string;
+  readonly language?: ISarvamAsrLanguage;
+  readonly audioBase64: string;
+}
+
 interface IResolvedAudioProfile {
   readonly requestedFormat: IAudioFormat;
   readonly actualFormat: IAudioFormat;
@@ -76,6 +89,7 @@ const AUDIO_CACHE_TTL_MS = 30 * 60 * 1000;
 const AUDIO_CACHE_MAX_ENTRIES = 200;
 const AUDIO_CHUNK_SIZE_FAST = 16 * 1024;
 const AUDIO_CHUNK_SIZE_SLOW = 8 * 1024;
+const MAX_AUDIO_INPUT_BYTES = 2 * 1024 * 1024;
 
 const AUDIO_MIME: Readonly<Record<IAudioFormat, string>> = {
   wav: 'audio/wav',
@@ -122,6 +136,31 @@ const isAnalyticsClientMessage = (payload: unknown): payload is IAnalyticsClient
   }
   const payloadCandidate = candidate.payload as Record<string, unknown>;
   return payloadCandidate.ctaType === 'pricing' || payloadCandidate.ctaType === 'contact';
+};
+
+const isAudioInputMessage = (payload: unknown): payload is IAudioInputMessage => {
+  if (typeof payload !== 'object' || payload === null) {
+    return false;
+  }
+  const candidate = payload as Record<string, unknown>;
+  const validType =
+    candidate.type === undefined ||
+    candidate.type === 'audio_input' ||
+    candidate.type === 'audio' ||
+    candidate.type === 'voice_input';
+  const validVertical =
+    candidate.vertical === undefined ||
+    candidate.vertical === 'dental' ||
+    candidate.vertical === 'auto' ||
+    candidate.vertical === 'legal';
+  const validLanguage =
+    candidate.language === undefined || candidate.language === 'hi-en' || candidate.language === 'mr-hi';
+  return (
+    validType &&
+    typeof candidate.audioBase64 === 'string' &&
+    validVertical &&
+    validLanguage
+  );
 };
 
 const parseRequestUrl = (request: IncomingMessage): URL => {
@@ -235,6 +274,7 @@ export const createVoiceWebSocketHandler = (
   dependencies: IWebSocketHandlerDependencies
 ): ((socket: WebSocket, request: IncomingMessage) => void) => {
   const { coreService, sessionStore, errorManager, analytics } = dependencies;
+  const sarvamService = dependencies.sarvamService ?? new SarvamService();
   const sessionAudioProfiles = new Map<string, IResolvedAudioProfile>();
   const audioCache = new Map<string, IAudioCacheEntry>();
 
@@ -401,7 +441,73 @@ export const createVoiceWebSocketHandler = (
           return;
         }
 
-        if (!isTranscriptMessage(parsed)) {
+        let transcriptPayload: ITranscriptMessage | null = null;
+        if (isTranscriptMessage(parsed)) {
+          transcriptPayload = parsed;
+        } else if (isAudioInputMessage(parsed)) {
+          const sessionForAudio = parsed.sessionId ?? activeSession?.sessionId;
+          if (!sessionForAudio) {
+            socket.send(JSON.stringify({ type: 'error', message: 'Session missing for audio transcription.' }));
+            return;
+          }
+
+          const audioBuffer = Buffer.from(parsed.audioBase64, 'base64');
+          if (audioBuffer.length === 0 || audioBuffer.length > MAX_AUDIO_INPUT_BYTES) {
+            socket.send(
+              JSON.stringify({
+                type: 'error',
+                sessionId: sessionForAudio,
+                message: 'Audio input size invalid. Please record a shorter voice message.'
+              })
+            );
+            return;
+          }
+
+          let transcriptText: string;
+          try {
+            transcriptText = await sarvamService.transcribeAudioBuffer(
+              audioBuffer,
+              parsed.language ?? 'hi-en',
+              {
+                fileName: parsed.fileName,
+                mimeType: parsed.mimeType
+              }
+            );
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Audio transcription failed';
+            await analytics.trackError({
+              sessionId: sessionForAudio,
+              errorType: 'AUDIO_TRANSCRIBE_FAILED',
+              category: 'server',
+              recoverySuccess: false
+            });
+            socket.send(
+              JSON.stringify({
+                type: 'error',
+                sessionId: sessionForAudio,
+                message: `${errorManager.getUserMessage('GENERIC_RETRY')} (${errorMessage})`
+              })
+            );
+            return;
+          }
+
+          socket.send(
+            JSON.stringify({
+              type: 'transcript',
+              sessionId: sessionForAudio,
+              text: transcriptText
+            })
+          );
+
+          transcriptPayload = {
+            type: 'transcript',
+            text: transcriptText,
+            vertical: parsed.vertical,
+            sessionId: sessionForAudio
+          };
+        }
+
+        if (!transcriptPayload) {
           errorManager.recordError({
             category: 'user',
             code: 'INVALID_MESSAGE_TYPE',
@@ -412,16 +518,20 @@ export const createVoiceWebSocketHandler = (
             JSON.stringify({
               type: 'error',
               message:
-                "Expected payload: { type: 'init', vertical: 'dental' } or { type: 'transcript', text: '...' }"
+                "Expected payload: { type: 'init', vertical: 'dental' } or { type: 'transcript', text: '...' } or { type: 'audio_input', audioBase64: '...' }",
+              receivedType:
+                typeof parsed === 'object' && parsed !== null && 'type' in parsed
+                  ? String((parsed as Record<string, unknown>).type)
+                  : 'unknown'
             })
           );
           return;
         }
 
-        const sessionId = parsed.sessionId ?? activeSession?.sessionId;
+        const sessionId = transcriptPayload.sessionId ?? activeSession?.sessionId;
         const currentSession = sessionId ? sessionStore.getSession(sessionId) : null;
         if (!currentSession) {
-          const recovered = sessionStore.createSession(parsed.vertical ?? requestedVertical, metadata);
+          const recovered = sessionStore.createSession(transcriptPayload.vertical ?? requestedVertical, metadata);
           activeSession = recovered;
           errorManager.recordError({
             category: 'server',
@@ -446,7 +556,7 @@ export const createVoiceWebSocketHandler = (
           return;
         }
 
-        if (parsed.text.trim().length === 0) {
+        if (transcriptPayload.text.trim().length === 0) {
           errorManager.recordError({
             category: 'user',
             code: 'EMPTY_INPUT',
@@ -472,17 +582,17 @@ export const createVoiceWebSocketHandler = (
         const turnStartedAtMs = Date.now();
         errorManager.markRequest();
 
-        const detectedVertical = detectVerticalFromLanguage(parsed.text);
+        const detectedVertical = detectVerticalFromLanguage(transcriptPayload.text);
         const resolvedVertical = resolveVertical(
-          detectedVertical ?? parsed.vertical ?? currentSession.vertical
+          detectedVertical ?? transcriptPayload.vertical ?? currentSession.vertical
         );
         const verticalService = createVerticalService(resolvedVertical);
         const userTurn: IConversationHistoryItem = {
           role: 'user',
-          text: parsed.text,
+          text: transcriptPayload.text,
           timestamp: new Date()
         };
-        const extractedFromTurn = verticalService.extractEntities(parsed.text);
+        const extractedFromTurn = verticalService.extractEntities(transcriptPayload.text);
         sessionStore.updateSession(currentSession.sessionId, {
           vertical: resolvedVertical,
           extractedEntities: {
@@ -499,7 +609,10 @@ export const createVoiceWebSocketHandler = (
         }
 
         const history = toCoreHistory(updatedBeforeCore.conversationHistory);
-        const verticalResponse = verticalService.composeResponse(parsed.text, updatedBeforeCore.extractedEntities);
+        const verticalResponse = verticalService.composeResponse(
+          transcriptPayload.text,
+          updatedBeforeCore.extractedEntities
+        );
         const audioProfile = sessionAudioProfiles.get(updatedBeforeCore.sessionId) ?? resolveAudioProfile();
         sessionAudioProfiles.set(updatedBeforeCore.sessionId, audioProfile);
 
@@ -546,7 +659,7 @@ export const createVoiceWebSocketHandler = (
         if (!audioBuffer) {
           await analytics.trackMessageSent({
             sessionId: updatedBeforeCore.sessionId,
-            messageLength: parsed.text.length,
+            messageLength: transcriptPayload.text.length,
             latencyMs: Date.now() - turnStartedAtMs
           });
           await analytics.trackMessageReceived({
@@ -623,7 +736,7 @@ export const createVoiceWebSocketHandler = (
         });
         await analytics.trackMessageSent({
           sessionId: updatedBeforeCore.sessionId,
-          messageLength: parsed.text.length,
+          messageLength: transcriptPayload.text.length,
           latencyMs: Date.now() - turnStartedAtMs
         });
       })().catch((error: unknown) => {

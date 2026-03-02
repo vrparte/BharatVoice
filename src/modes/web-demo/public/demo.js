@@ -7,7 +7,8 @@ const reconnectBtn = document.getElementById('connectBtn');
 const micBtn = document.getElementById('sendBtn');
 const actionsEl = document.querySelector('.actions');
 const SESSION_STORAGE_KEY = 'bharatvoice.webdemo.sessionId';
-const WS_BASE_URL = 'ws://localhost:3000/ws/voice';
+const WS_PROTOCOL = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const WS_BASE_URL = `${WS_PROTOCOL}//${window.location.host}/ws/voice`;
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const THEMES = {
@@ -35,6 +36,16 @@ let audioPlayer = null;
 let reconnectAttempts = 0;
 let reconnectTimer = null;
 let manualReconnect = false;
+let forceTextInputMode = false;
+let speechNetworkRetryDone = false;
+let speechNetworkFailures = 0;
+let speechRecoveryTimer = null;
+let mediaRecorder = null;
+let mediaStream = null;
+let mediaRecordTimeout = null;
+let mediaChunks = [];
+
+const AUDIO_INPUT_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg'];
 
 const statusEl = document.createElement('div');
 statusEl.className = 'status';
@@ -72,7 +83,7 @@ const setState = (nextState, statusText) => {
   }
   micBtn.textContent =
     nextState === 'idle'
-      ? SpeechRecognition
+      ? SpeechRecognition && !forceTextInputMode
         ? 'Start Mic'
         : 'Send Text'
       : nextState === 'listening'
@@ -174,6 +185,21 @@ const sendInit = () => {
   );
 };
 
+const scheduleSpeechRecovery = () => {
+  if (speechRecoveryTimer) {
+    clearTimeout(speechRecoveryTimer);
+  }
+  speechRecoveryTimer = setTimeout(() => {
+    forceTextInputMode = false;
+    speechNetworkFailures = 0;
+    speechNetworkRetryDone = false;
+    if (recognition) {
+      recognition.lang = 'hi-IN';
+    }
+    setState('idle', 'Speech service retry enabled. Aap mic dobara try kar sakte hain.');
+  }, 30000);
+};
+
 const scheduleReconnect = () => {
   if (manualReconnect) {
     return;
@@ -227,6 +253,14 @@ const handleSocketJson = async (data) => {
       return;
     }
     setState('processing', 'Receiving audio stream...');
+    return;
+  }
+
+  if (data.type === 'transcript') {
+    if (typeof data.text === 'string') {
+      transcriptEl.value = data.text;
+      log('asr.transcript', { text: data.text });
+    }
     return;
   }
 
@@ -353,6 +387,108 @@ const sendTranscript = (text) => {
   );
 };
 
+const canUseMediaInput = () => {
+  return typeof MediaRecorder !== 'undefined' && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+};
+
+const toBase64 = (arrayBuffer) => {
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+};
+
+const stopMediaCapture = () => {
+  if (mediaRecordTimeout) {
+    clearTimeout(mediaRecordTimeout);
+    mediaRecordTimeout = null;
+  }
+  if (mediaStream) {
+    mediaStream.getTracks().forEach((track) => track.stop());
+    mediaStream = null;
+  }
+  mediaRecorder = null;
+  mediaChunks = [];
+};
+
+const sendRecordedAudio = async () => {
+  if (!socket || socket.readyState !== WebSocket.OPEN || mediaChunks.length === 0) {
+    stopMediaCapture();
+    return;
+  }
+
+  const audioType =
+    mediaRecorder && typeof mediaRecorder.mimeType === 'string' && mediaRecorder.mimeType
+      ? mediaRecorder.mimeType
+      : 'audio/webm';
+  const blob = new Blob(mediaChunks, { type: audioType });
+  const arrayBuffer = await blob.arrayBuffer();
+  const base64 = toBase64(arrayBuffer);
+
+  setState('processing', 'Transcribing voice...');
+  startTypingIndicator();
+  socket.send(
+    JSON.stringify({
+      type: 'audio_input',
+      sessionId: sessionId || undefined,
+      vertical: verticalEl.value,
+      language: 'hi-en',
+      mimeType: audioType,
+      fileName: `browser-mic-${Date.now()}.${audioType.includes('ogg') ? 'ogg' : 'webm'}`,
+      audioBase64: base64
+    })
+  );
+  stopMediaCapture();
+};
+
+const startMediaCapture = async () => {
+  if (!canUseMediaInput()) {
+    setState('idle', `Mic capture unsupported. ${MSG.retry}`);
+    return;
+  }
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    setState('idle', `WebSocket disconnected. ${MSG.retry}`);
+    return;
+  }
+
+  const mimeType = AUDIO_INPUT_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaChunks = [];
+    mediaRecorder = mimeType
+      ? new MediaRecorder(mediaStream, { mimeType })
+      : new MediaRecorder(mediaStream);
+  } catch {
+    setState('idle', `Mic permission denied or unavailable. ${MSG.retry}`);
+    return;
+  }
+
+  mediaRecorder.ondataavailable = (event) => {
+    if (event.data && event.data.size > 0) {
+      mediaChunks.push(event.data);
+    }
+  };
+
+  mediaRecorder.onerror = () => {
+    stopMediaCapture();
+    setState('idle', `Mic recording error. ${MSG.retry}`);
+  };
+
+  mediaRecorder.onstop = () => {
+    void sendRecordedAudio();
+  };
+
+  setState('listening', 'Listening... बोलने के बाद 4 sec में auto-stop');
+  mediaRecorder.start();
+  mediaRecordTimeout = setTimeout(() => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+  }, 4000);
+};
+
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 if (recognition) {
   recognition.lang = 'hi-IN';
@@ -362,6 +498,10 @@ if (recognition) {
 
   recognition.onstart = () => {
     finalTranscript = '';
+    speechNetworkFailures = 0;
+    if (forceTextInputMode) {
+      forceTextInputMode = false;
+    }
     setState('listening', 'Listening...');
     sttTimeout = setTimeout(() => {
       recognition.stop();
@@ -388,6 +528,37 @@ if (recognition) {
       setState('idle', `Mic permission denied. ${MSG.retry}`);
       return;
     }
+    if (event.error === 'network') {
+      speechNetworkFailures += 1;
+      if (!speechNetworkRetryDone && recognition.lang !== 'en-IN') {
+        speechNetworkRetryDone = true;
+        recognition.lang = 'en-IN';
+        setState('idle', 'Speech network issue detected. Retrying once with fallback language...');
+        setTimeout(() => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            recognition.start();
+          }
+        }, 350);
+        return;
+      }
+
+      if (speechNetworkFailures >= 3) {
+        forceTextInputMode = true;
+        setState(
+          'idle',
+          `Speech service unavailable right now. Type transcript and click Send Text. ${MSG.retry}`
+        );
+        scheduleSpeechRecovery();
+      } else {
+        setState('idle', `Speech network issue. Mic ko fir se try karein ya text bhejein. ${MSG.retry}`);
+      }
+      log('stt.fallback', {
+        reason: 'network_error',
+        lang: recognition.lang,
+        failures: speechNetworkFailures
+      });
+      return;
+    }
     setState('idle', `Speech error: ${event.error}. ${MSG.retry}`);
   };
 
@@ -403,6 +574,19 @@ if (recognition) {
 }
 
 micBtn.addEventListener('click', () => {
+  if (canUseMediaInput()) {
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      void connectWebSocket().then(() => {
+        setTimeout(() => {
+          void startMediaCapture();
+        }, 300);
+      });
+      return;
+    }
+    void startMediaCapture();
+    return;
+  }
+
   if (!recognition) {
     sendTranscript(transcriptEl.value);
     return;

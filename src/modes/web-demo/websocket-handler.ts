@@ -5,9 +5,13 @@ import { deflateSync } from 'zlib';
 import type { WebSocket } from 'ws';
 
 import { createVerticalService, detectVerticalFromLanguage } from '../../core/verticals';
+import type { ConversationContext } from '../../core/conversation/state-machine';
+import { ConversationState } from '../../core/conversation/state-machine';
+import { ResponseGenerator } from '../../core/conversation/response-generator';
 import type { ICoreConversationMessage, VoiceAgentCoreService } from '../../core/voice-agent-core.service';
 import { SarvamService } from '../../services/sarvam.service';
 import type { ISarvamAsrLanguage } from '../../types/sarvam.types';
+import type { ISarvamTtsVoice } from '../../types/sarvam.types';
 
 import type { WebDemoAnalyticsTracker } from './analytics';
 import { webDemoConfig } from './config';
@@ -208,6 +212,13 @@ const appendConversationItem = (
   item: IConversationHistoryItem
 ): IConversationHistoryItem[] => [...session.conversationHistory, item];
 
+const defaultConversationContext = (): ConversationContext & { readonly state: ConversationState } => ({
+  state: ConversationState.GREETING,
+  missingFields: ['name', 'date', 'time', 'phone'],
+  collectedData: {},
+  retryCount: 0
+});
+
 const resolveAudioProfile = (message?: IInitMessage): IResolvedAudioProfile => {
   const requestedFormat = message?.audio?.formats?.[0] ?? 'wav';
   const actualFormat: IAudioFormat = 'wav';
@@ -276,6 +287,7 @@ export const createVoiceWebSocketHandler = (
   const { coreService, sessionStore, errorManager, analytics } = dependencies;
   const sarvamService = dependencies.sarvamService ?? new SarvamService();
   const sessionAudioProfiles = new Map<string, IResolvedAudioProfile>();
+  const sessionResponseGenerators = new Map<string, ResponseGenerator>();
   const audioCache = new Map<string, IAudioCacheEntry>();
 
   const getCachedAudio = (cacheKey: string): Buffer | null => {
@@ -609,14 +621,27 @@ export const createVoiceWebSocketHandler = (
         }
 
         const history = toCoreHistory(updatedBeforeCore.conversationHistory);
-        const verticalResponse = verticalService.composeResponse(
+        const existingContext = updatedBeforeCore.conversationContext ?? defaultConversationContext();
+        let responseGenerator = sessionResponseGenerators.get(updatedBeforeCore.sessionId);
+        if (!responseGenerator) {
+          responseGenerator = new ResponseGenerator(verticalService, {
+            voiceService: {
+              synthesizeSpeech: async (_text: string, _voice: ISarvamTtsVoice): Promise<Buffer> =>
+                Buffer.from([0]),
+              getAudioContentType: (): string => 'audio/wav'
+            }
+          });
+          sessionResponseGenerators.set(updatedBeforeCore.sessionId, responseGenerator);
+        }
+        const generatedResponse = await responseGenerator.generateResponse(
           transcriptPayload.text,
-          updatedBeforeCore.extractedEntities
+          existingContext
         );
+        const responseText = generatedResponse.text;
         const audioProfile = sessionAudioProfiles.get(updatedBeforeCore.sessionId) ?? resolveAudioProfile();
         sessionAudioProfiles.set(updatedBeforeCore.sessionId, audioProfile);
 
-        const cacheKey = `${updatedBeforeCore.vertical}|${verticalResponse.text}|${audioProfile.actualFormat}`;
+        const cacheKey = `${updatedBeforeCore.vertical}|${responseText}|${audioProfile.actualFormat}`;
         let audioBuffer = getCachedAudio(cacheKey);
         let cacheHit = true;
         let ttsLatencyMs = 0;
@@ -626,7 +651,7 @@ export const createVoiceWebSocketHandler = (
           const ttsStart = Date.now();
           try {
             const coreResult = await coreService.synthesizeFromContext({
-              responseText: verticalResponse.text,
+              responseText,
               vertical: updatedBeforeCore.vertical,
               sessionId: updatedBeforeCore.sessionId,
               history
@@ -649,10 +674,25 @@ export const createVoiceWebSocketHandler = (
 
         const assistantTurn: IConversationHistoryItem = {
           role: 'assistant',
-          text: verticalResponse.text,
+          text: responseText,
           timestamp: new Date()
         };
         sessionStore.updateSession(updatedBeforeCore.sessionId, {
+          extractedEntities: {
+            ...updatedBeforeCore.extractedEntities,
+            name: generatedResponse.extractedData.name ?? updatedBeforeCore.extractedEntities.name,
+            phone: generatedResponse.extractedData.phone ?? updatedBeforeCore.extractedEntities.phone,
+            date: generatedResponse.extractedData.date ?? updatedBeforeCore.extractedEntities.date,
+            time: generatedResponse.extractedData.time ?? updatedBeforeCore.extractedEntities.time,
+            serviceType:
+              generatedResponse.extractedData.service ?? updatedBeforeCore.extractedEntities.serviceType
+          },
+          conversationContext: {
+            state: generatedResponse.state,
+            missingFields: [...generatedResponse.updatedContext.missingFields],
+            collectedData: { ...generatedResponse.updatedContext.collectedData },
+            retryCount: generatedResponse.updatedContext.retryCount
+          },
           conversationHistory: appendConversationItem(updatedBeforeCore, assistantTurn)
         });
 
@@ -664,7 +704,7 @@ export const createVoiceWebSocketHandler = (
           });
           await analytics.trackMessageReceived({
             sessionId: updatedBeforeCore.sessionId,
-            responseLength: verticalResponse.text.length,
+            responseLength: responseText.length,
             ttsLatencyMs: 0
           });
           socket.send(
@@ -672,8 +712,11 @@ export const createVoiceWebSocketHandler = (
               type: 'response',
               sessionId: updatedBeforeCore.sessionId,
               vertical: updatedBeforeCore.vertical,
-              text: `${verticalResponse.text} (${errorManager.getUserMessage('AUDIO_UNAVAILABLE')})`,
-              audioUnavailable: true
+              text: `${responseText} (${errorManager.getUserMessage('AUDIO_UNAVAILABLE')})`,
+              audioUnavailable: true,
+              state: generatedResponse.state,
+              action: generatedResponse.action,
+              data: generatedResponse.data
             })
           );
           return;
@@ -691,8 +734,11 @@ export const createVoiceWebSocketHandler = (
             type: 'response',
             sessionId: updatedBeforeCore.sessionId,
             vertical: updatedBeforeCore.vertical,
-            text: verticalResponse.text,
-            streamId
+            text: responseText,
+            streamId,
+            state: generatedResponse.state,
+            action: generatedResponse.action,
+            data: generatedResponse.data
           })
         );
         socket.send(
@@ -731,7 +777,7 @@ export const createVoiceWebSocketHandler = (
 
         await analytics.trackMessageReceived({
           sessionId: updatedBeforeCore.sessionId,
-          responseLength: verticalResponse.text.length,
+          responseLength: responseText.length,
           ttsLatencyMs
         });
         await analytics.trackMessageSent({
@@ -772,6 +818,7 @@ export const createVoiceWebSocketHandler = (
         errorManager.decrementConnectedClients();
         return;
       }
+      sessionResponseGenerators.delete(activeSession.sessionId);
       sessionStore.updateSession(activeSession.sessionId, { lastActivity: new Date() });
       errorManager.decrementConnectedClients();
       errorManager.recordError({

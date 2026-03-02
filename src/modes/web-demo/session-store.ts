@@ -1,5 +1,7 @@
 import { randomUUID } from 'crypto';
 
+import type { ConversationCollectedData, ConversationState } from '../../core/conversation/state-machine';
+
 export type IWebDemoVertical = 'dental' | 'auto' | 'legal';
 
 export interface IConversationHistoryItem {
@@ -27,6 +29,12 @@ export interface IWebDemoSession {
   readonly vertical: IWebDemoVertical;
   readonly conversationHistory: IConversationHistoryItem[];
   readonly extractedEntities: IExtractedEntities;
+  readonly conversationContext?: {
+    readonly state: ConversationState;
+    readonly missingFields: string[];
+    readonly collectedData: ConversationCollectedData;
+    readonly retryCount: number;
+  };
   readonly lastActivity: Date;
   readonly metadata: ISessionMetadata;
 }
@@ -87,6 +95,14 @@ const cloneSession = (session: IWebDemoSession): IWebDemoSession => {
     conversationHistory: cloneConversationHistory(session.conversationHistory),
     lastActivity: new Date(session.lastActivity),
     extractedEntities: { ...session.extractedEntities },
+    conversationContext: session.conversationContext
+      ? {
+          state: session.conversationContext.state,
+          missingFields: [...session.conversationContext.missingFields],
+          collectedData: { ...session.conversationContext.collectedData },
+          retryCount: session.conversationContext.retryCount
+        }
+      : undefined,
     metadata: { ...session.metadata }
   };
 };
@@ -159,6 +175,14 @@ export class WebDemoSessionStore {
         ...current.extractedEntities,
         ...(updates.extractedEntities ?? {})
       },
+      conversationContext: updates.conversationContext
+        ? {
+            state: updates.conversationContext.state,
+            missingFields: [...updates.conversationContext.missingFields],
+            collectedData: { ...updates.conversationContext.collectedData },
+            retryCount: updates.conversationContext.retryCount
+          }
+        : current.conversationContext,
       metadata: {
         ...current.metadata,
         ...(updates.metadata ?? {})

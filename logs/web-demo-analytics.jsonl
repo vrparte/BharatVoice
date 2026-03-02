@@ -16,3 +16,10 @@
 {"type":"demo_completed","timestamp":"2026-03-02T23:08:14.261Z","sessionId":"9b4e3af2-a50e-4414-a3a7-768632b338b2","durationSeconds":16,"turnCount":0,"outcome":"dropped"}
 {"type":"demo_started","timestamp":"2026-03-02T23:08:51.672Z","sessionId":"d3c719fc-4620-4b4d-84b0-49649c27f3e4","vertical":"dental","referrer":"http://localhost:3001","country":"unknown","city":"unknown","ipHash":"eff8e7ca506627fe15dda5e0e512fcaad70b6d520f37cc76597fdb4f2d83a1a3"}
 {"type":"error_occurred","timestamp":"2026-03-02T23:09:02.934Z","sessionId":"caa8349d-a647-4984-bb55-7bdfcf115fae","errorType":"AUDIO_TRANSCRIBE_FAILED","category":"server","recoverySuccess":false}
+{"type":"demo_started","timestamp":"2026-03-02T23:11:48.539Z","sessionId":"8cc68c0b-2fed-42f2-b497-62199561dcea","vertical":"dental","referrer":"http://localhost:3001","country":"unknown","city":"unknown","ipHash":"eff8e7ca506627fe15dda5e0e512fcaad70b6d520f37cc76597fdb4f2d83a1a3"}
+{"type":"message_received","timestamp":"2026-03-02T23:12:02.820Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","responseLength":75,"ttsLatencyMs":3846}
+{"type":"message_sent","timestamp":"2026-03-02T23:12:02.828Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","messageLength":19,"latencyMs":3872}
+{"type":"message_received","timestamp":"2026-03-02T23:12:18.521Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","responseLength":75,"ttsLatencyMs":0}
+{"type":"message_sent","timestamp":"2026-03-02T23:12:18.525Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","messageLength":15,"latencyMs":11}
+{"type":"message_received","timestamp":"2026-03-02T23:12:47.048Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","responseLength":75,"ttsLatencyMs":0}
+{"type":"message_sent","timestamp":"2026-03-02T23:12:47.052Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","messageLength":33,"latencyMs":13}

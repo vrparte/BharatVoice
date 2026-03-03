@@ -31,46 +31,47 @@ interface IntentRule {
 }
 
 const SERVICE_KEYWORDS = ['cleaning', 'filling', 'service', 'consultation'] as const;
+const DEVANAGARI_DIGITS = '०१२३४५६७८९';
 
 const INTENT_RULES: readonly IntentRule[] = [
   {
     intent: Intent.EMERGENCY,
-    keywords: ['emergency', 'dard', 'pain', 'blood', 'accident'],
+    keywords: ['emergency', 'dard', 'pain', 'blood', 'accident', 'दर्द', 'खून', 'एक्सीडेंट', 'accident'],
     baseConfidence: 0.95
   },
   {
     intent: Intent.GREETING,
-    keywords: ['namaste', 'hello', 'hi', 'good morning'],
+    keywords: ['namaste', 'hello', 'hi', 'good morning', 'नमस्ते', 'नमस्कार'],
     baseConfidence: 0.95
   },
   {
     intent: Intent.BOOK_APPOINTMENT,
-    keywords: ['appointment', 'booking', 'slot', 'time', 'jana hai'],
+    keywords: ['appointment', 'booking', 'slot', 'time', 'jana hai', 'अपॉइंटमेंट', 'बुकिंग', 'जाना है', 'चाहिए'],
     baseConfidence: 0.9
   },
   {
     intent: Intent.CHECK_PRICE,
-    keywords: ['kitna', 'price', 'cost', 'charge', 'paise'],
+    keywords: ['kitna', 'price', 'cost', 'charge', 'paise', 'कितना', 'चार्ज', 'पैसे', 'फीस'],
     baseConfidence: 0.9
   },
   {
     intent: Intent.CHECK_HOURS,
-    keywords: ['time', 'hours', 'kab khulta', 'kitne baje'],
+    keywords: ['time', 'hours', 'kab khulta', 'kitne baje', 'कब खुलता', 'कितने बजे', 'टाइम'],
     baseConfidence: 0.85
   },
   {
     intent: Intent.PROVIDE_INFO,
-    keywords: ['my name is', 'mera naam', 'number hai'],
+    keywords: ['my name is', 'mera naam', 'number hai', 'मेरा नाम', 'नाम', 'नंबर', 'फोन नंबर'],
     baseConfidence: 0.8
   },
   {
     intent: Intent.CONFIRM,
-    keywords: ['yes', 'haan', 'theek hai', 'ok'],
+    keywords: ['yes', 'haan', 'theek hai', 'ok', 'हाँ', 'हां', 'ठीक है', 'जी'],
     baseConfidence: 0.9
   },
   {
     intent: Intent.REJECT,
-    keywords: ['no', 'nahi', 'cancel'],
+    keywords: ['no', 'nahi', 'cancel', 'नहीं', 'नहि', 'कैंसिल', 'मत'],
     baseConfidence: 0.9
   }
 ];
@@ -87,51 +88,98 @@ const clampConfidence = (value: number): number => {
 
 const normalize = (input: string): string => input.trim().toLowerCase();
 
+const normalizeForEntityExtraction = (input: string): string => {
+  const withAsciiDigits = normalizeDigits(input);
+  return withAsciiDigits
+    .replace(/[.,!?;:()"'`|/\\[\]{}]/g, ' ')
+    .replace(/।/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const normalizeDigits = (input: string): string => {
+  let output = '';
+  for (const character of input) {
+    const index = DEVANAGARI_DIGITS.indexOf(character);
+    output += index >= 0 ? String(index) : character;
+  }
+  return output;
+};
+
 const extractName = (input: string): string | undefined => {
-  const match = /\b(?:my name is|mera naam)\s+([a-zA-Z]{2,})(?:\s+hai)?\b/i.exec(input);
-  return match?.[1];
+  const normalized = normalizeForEntityExtraction(input);
+  const nameToken = '[\\p{L}\\p{M}]{2,}';
+  const nameCapture = `(${nameToken}(?:\\s+${nameToken})?)`;
+  const sanitizeName = (value: string): string =>
+    value
+      .replace(/\s+(?:hai|hu|hun|है|हूं|हूँ)$/iu, '')
+      .trim();
+  const patterns = [
+    new RegExp(`(?:my name is|mera naam|mere naam)\\s+${nameCapture}(?:\\s+(?:hai|hu|hun))?`, 'iu'),
+    new RegExp(`(?:मेरा नाम|मेरे नाम|नाम)\\s+${nameCapture}(?:\\s+(?:है|हूं|हूँ))?`, 'u'),
+    new RegExp(`(?:main|mai)\\s+${nameCapture}\\s+(?:hu|hun)`, 'iu'),
+    new RegExp(`(?:मैं)\\s+${nameCapture}\\s+(?:हूं|हूँ)`, 'u')
+  ];
+  for (const pattern of patterns) {
+    const match = pattern.exec(normalized);
+    if (match?.[1]) {
+      return sanitizeName(match[1]);
+    }
+  }
+  return undefined;
 };
 
 const extractPhone = (input: string): string | undefined => {
-  const match = /\b(?:\+91[-\s]?)?([6-9]\d{9})\b/.exec(input);
+  const normalized = normalizeForEntityExtraction(input);
+  const match = /\b(?:\+91[-\s]?)?([6-9]\d{9})\b/.exec(normalized);
   return match?.[1];
 };
 
 const extractDate = (input: string): string | undefined => {
-  if (/\bkal\b/.test(input)) {
+  const normalized = normalizeForEntityExtraction(input);
+  if (/\bkal\b/.test(normalized) || /कल/.test(normalized)) {
     return 'tomorrow';
   }
-  if (/\bparso\b/.test(input)) {
+  if (/\bparso\b/.test(normalized) || /परसो|परसों/.test(normalized)) {
     return 'day_after_tomorrow';
   }
-  if (/\bnext week\b/.test(input)) {
+  if (/\bnext week\b/.test(normalized) || /अगले हफ्ते|अगले सप्ताह/.test(normalized)) {
     return 'next_week';
   }
-  if (/\bmonday\b/.test(input)) {
+  if (/\bmonday\b/.test(normalized) || /सोमवार/.test(normalized)) {
     return 'monday';
+  }
+  if (/\btuesday\b/.test(normalized) || /मंगलवार/.test(normalized)) {
+    return 'tuesday';
   }
   return undefined;
 };
 
 const extractTime = (input: string): string | undefined => {
-  const clockMatch = /\b(1[0-2]|0?[1-9])\s*baje\b/.exec(input);
+  const normalized = normalizeForEntityExtraction(input);
+  const clockMatch = /\b(1[0-2]|0?[1-9])\s*(?:baje|बजे)\b/i.exec(normalized);
   if (clockMatch) {
-    return `${clockMatch[1]} AM`;
+    const hour = Number(clockMatch[1]);
+    if (/\bsham\b|शाम|रात/.test(normalized)) {
+      return `${hour} PM`;
+    }
+    return `${hour} AM`;
   }
-  if (/\bsubah\b/.test(input)) {
+  if (/\bsubah\b|सुबह/.test(normalized)) {
     return 'morning';
   }
-  if (/\bdopahar\b/.test(input)) {
+  if (/\bdopahar\b|दोपहर/.test(normalized)) {
     return 'afternoon';
   }
-  if (/\bsham\b/.test(input)) {
+  if (/\bsham\b|शाम/.test(normalized)) {
     return 'evening';
   }
   return undefined;
 };
 
 const extractService = (input: string): string | undefined => {
-  return SERVICE_KEYWORDS.find((keyword) => input.includes(keyword));
+  const normalized = normalizeForEntityExtraction(input);
+  return SERVICE_KEYWORDS.find((keyword) => normalized.includes(keyword));
 };
 
 const extractEntities = (input: string): ExtractedEntities => ({

@@ -143,7 +143,7 @@ describe('Echo bot call flow integration', () => {
       'https://api.exotel.com/v1/recordings/call-echo-1.wav',
       'hi-en'
     );
-    expect(voiceServiceMock.synthesizeSpeech).toHaveBeenCalledWith('Aapne kaha: mera naam Rahul hai', 'meera');
+    expect(voiceServiceMock.synthesizeSpeech).toHaveBeenCalledWith('Aapne kaha: mera naam Rahul hai', 'ratan');
 
     expect(recordingRes.statusMock).toHaveBeenCalledWith(200);
     expect(recordingRes.typeMock).toHaveBeenCalledWith('application/xml');

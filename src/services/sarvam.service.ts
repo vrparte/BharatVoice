@@ -32,6 +32,12 @@ const SARVAM_VOICE_PROFILES: Readonly<Record<ISarvamTtsVoice, ISarvamVoiceProfil
     sarvamSpeaker: 'priya',
     voiceId: 'bv-pavitra-bulbul-v3',
     targetLanguageCode: 'hi-IN'
+  },
+  ratan: {
+    appVoice: 'ratan',
+    sarvamSpeaker: 'ratan',
+    voiceId: 'bv-ratan-bulbul-v3',
+    targetLanguageCode: 'hi-IN'
   }
 };
 

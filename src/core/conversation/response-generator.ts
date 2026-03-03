@@ -112,7 +112,7 @@ export class ResponseGenerator {
     this.voiceService = dependencies?.voiceService ?? new VoiceService();
     this.bookingExecutor = dependencies?.bookingExecutor;
     this.createAudioUrl = dependencies?.createAudioUrl;
-    this.defaultVoice = dependencies?.defaultVoice ?? 'meera';
+    this.defaultVoice = dependencies?.defaultVoice ?? 'ratan';
   }
 
   public getHistory(): readonly ConversationHistoryItem[] {

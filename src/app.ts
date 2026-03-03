@@ -39,12 +39,12 @@ app.post('/webhook/call-status', handleCallStatusCallback);
 app.get('/media/call-audio/:audioId', handlePlaybackAudioRequest);
 app.get('/test/tts', (req: Request, res: Response): void => {
   const textQuery = typeof req.query.text === 'string' ? req.query.text : 'Hello, your call is received';
-  const voiceQuery = typeof req.query.voice === 'string' ? req.query.voice : 'meera';
+  const voiceQuery = typeof req.query.voice === 'string' ? req.query.voice : 'ratan';
 
-  if (voiceQuery !== 'meera' && voiceQuery !== 'pavitra') {
+  if (voiceQuery !== 'meera' && voiceQuery !== 'pavitra' && voiceQuery !== 'ratan') {
     res.status(400).json({
       error: 'Invalid voice',
-      message: 'voice must be one of: meera, pavitra'
+      message: 'voice must be one of: meera, pavitra, ratan'
     });
     return;
   }

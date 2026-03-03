@@ -23,3 +23,16 @@
 {"type":"message_sent","timestamp":"2026-03-02T23:12:18.525Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","messageLength":15,"latencyMs":11}
 {"type":"message_received","timestamp":"2026-03-02T23:12:47.048Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","responseLength":75,"ttsLatencyMs":0}
 {"type":"message_sent","timestamp":"2026-03-02T23:12:47.052Z","sessionId":"b6f8803c-c56b-4ca7-a5b1-25286e9f557b","messageLength":33,"latencyMs":13}
+{"type":"demo_started","timestamp":"2026-03-02T23:42:18.557Z","sessionId":"91791109-b671-4488-bd8b-0858d912d57d","vertical":"dental","referrer":"http://localhost:3001","country":"unknown","city":"unknown","ipHash":"eff8e7ca506627fe15dda5e0e512fcaad70b6d520f37cc76597fdb4f2d83a1a3"}
+{"type":"demo_completed","timestamp":"2026-03-02T23:42:19.639Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","durationSeconds":1,"turnCount":0,"outcome":"dropped"}
+{"type":"demo_started","timestamp":"2026-03-02T23:42:19.704Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","vertical":"dental","referrer":"http://localhost:3001","country":"unknown","city":"unknown","ipHash":"eff8e7ca506627fe15dda5e0e512fcaad70b6d520f37cc76597fdb4f2d83a1a3"}
+{"type":"message_received","timestamp":"2026-03-02T23:42:34.386Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","responseLength":53,"ttsLatencyMs":3780}
+{"type":"message_sent","timestamp":"2026-03-02T23:42:34.388Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","messageLength":33,"latencyMs":3797}
+{"type":"message_received","timestamp":"2026-03-02T23:42:52.048Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","responseLength":19,"ttsLatencyMs":2519}
+{"type":"message_sent","timestamp":"2026-03-02T23:42:52.050Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","messageLength":23,"latencyMs":2525}
+{"type":"message_received","timestamp":"2026-03-02T23:43:01.777Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","responseLength":53,"ttsLatencyMs":0}
+{"type":"message_sent","timestamp":"2026-03-02T23:43:01.780Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","messageLength":15,"latencyMs":9}
+{"type":"message_received","timestamp":"2026-03-02T23:52:19.779Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","responseLength":19,"ttsLatencyMs":0}
+{"type":"message_sent","timestamp":"2026-03-02T23:52:19.789Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","messageLength":41,"latencyMs":23}
+{"type":"message_received","timestamp":"2026-03-02T23:52:30.936Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","responseLength":53,"ttsLatencyMs":0}
+{"type":"message_sent","timestamp":"2026-03-02T23:52:30.941Z","sessionId":"56743ae2-bfeb-4668-815b-54ad9160cfc8","messageLength":15,"latencyMs":16}

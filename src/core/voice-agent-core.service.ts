@@ -51,12 +51,12 @@ export class VoiceAgentCoreService {
     }
 
     const responseText = this.generateEchoResponse(cleanTranscript, normalizeVertical(input.vertical));
-    return this.synthesizeResponseText(responseText, 'meera');
+    return this.synthesizeResponseText(responseText, 'ratan');
   }
 
   public async synthesizeResponseText(
     text: string,
-    voice: ISarvamTtsVoice = 'meera'
+    voice: ISarvamTtsVoice = 'ratan'
   ): Promise<ICoreHandleTranscriptResult> {
     const normalizedText = text.trim();
     if (normalizedText.length === 0) {
@@ -79,7 +79,7 @@ export class VoiceAgentCoreService {
     void input.vertical;
     void input.sessionId;
     void input.history;
-    return this.synthesizeResponseText(input.responseText, 'meera');
+    return this.synthesizeResponseText(input.responseText, 'ratan');
   }
 
   private generateEchoResponse(transcript: string, vertical: string): string {

@@ -30,6 +30,9 @@ const VOICE_PROFILES: Readonly<Record<ISarvamTtsVoice, IVoiceProfileConfig>> = {
   },
   pavitra: {
     voiceId: 'bv-pavitra-bulbul-v3'
+  },
+  ratan: {
+    voiceId: 'bv-ratan-bulbul-v3'
   }
 };
 

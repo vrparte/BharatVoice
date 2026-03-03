@@ -19,6 +19,10 @@ export interface ResponseObject {
   readonly updatedContext: ConversationContext;
   readonly extractedData: Partial<ExtractedEntities>;
   readonly history: readonly ConversationHistoryItem[];
+  readonly debug: {
+    readonly intent: Intent;
+    readonly confidence: number;
+  };
 }
 
 interface ResponseGeneratorDependencies {
@@ -189,6 +193,10 @@ export class ResponseGenerator {
           updatedContext: this.stateMachine.context,
           extractedData: recoveredEntities,
           history: this.stateMachine.getHistory(),
+          debug: {
+            intent: effectiveIntent,
+            confidence: classification.confidence
+          },
           action,
           data
         };
@@ -206,6 +214,10 @@ export class ResponseGenerator {
         updatedContext: this.stateMachine.context,
         extractedData: recoveredEntities,
         history: this.stateMachine.getHistory(),
+        debug: {
+          intent: effectiveIntent,
+          confidence: classification.confidence
+        },
         audioUrl,
         action,
         data
@@ -217,6 +229,10 @@ export class ResponseGenerator {
         updatedContext: this.stateMachine.context,
         extractedData: recoveredEntities,
         history: this.stateMachine.getHistory(),
+        debug: {
+          intent: effectiveIntent,
+          confidence: classification.confidence
+        },
         action,
         data
       };

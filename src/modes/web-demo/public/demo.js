@@ -44,8 +44,17 @@ let mediaRecorder = null;
 let mediaStream = null;
 let mediaRecordTimeout = null;
 let mediaChunks = [];
+let turnCount = 0;
+const MAX_TURNS = 5;
+let currentConversationState = 'GREETING';
+let lastIntent = '-';
+let lastConfidence = '-';
+let collectedSnapshot = {};
+let missingSnapshot = [];
 
 const AUDIO_INPUT_TYPES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg'];
+const DEBUG_MODE =
+  window.location.hostname === 'localhost' || new URLSearchParams(window.location.search).get('debug') === '1';
 
 const statusEl = document.createElement('div');
 statusEl.className = 'status';
@@ -58,8 +67,47 @@ styleEl.textContent = `
   .mic-idle,.mic-listening { background:var(--bv-color,#0b5cab); }
   .mic-processing { background:#b45309; }
   .mic-speaking { background:#5b21b6; }
+  .demo-meta { margin:10px 0; padding:10px; border:1px solid #d6e3f3; border-radius:10px; background:#f8fbff; }
+  .demo-row { display:flex; gap:10px; flex-wrap:wrap; font-size:12px; color:#1f3552; }
+  .demo-chip { padding:4px 8px; border-radius:999px; background:#eaf2fb; }
+  .thinking { font-size:12px; color:#b45309; display:none; margin-top:8px; }
+  .chat-log { margin-top:10px; display:flex; flex-direction:column; gap:8px; max-height:260px; overflow:auto; }
+  .bubble { max-width:90%; padding:8px 10px; border-radius:10px; line-height:1.35; font-size:13px; }
+  .bubble-user { align-self:flex-end; background:#dbeafe; color:#1e3a5f; }
+  .bubble-ai { align-self:flex-start; background:#ecfdf3; color:#14532d; }
+  .collected { margin-top:8px; font-size:12px; color:#1f3552; }
+  .debug-panel { margin-top:8px; padding:8px; background:#0f172a; color:#d1fae5; border-radius:8px; font-size:11px; white-space:pre-wrap; display:none; }
 `;
 document.head.appendChild(styleEl);
+
+const responseCardEl = responseTextEl.closest('.card');
+const metaEl = document.createElement('div');
+metaEl.className = 'demo-meta';
+const metaRowEl = document.createElement('div');
+metaRowEl.className = 'demo-row';
+const stateChipEl = document.createElement('span');
+stateChipEl.className = 'demo-chip';
+const turnChipEl = document.createElement('span');
+turnChipEl.className = 'demo-chip';
+const thinkingEl = document.createElement('div');
+thinkingEl.className = 'thinking';
+const collectedEl = document.createElement('div');
+collectedEl.className = 'collected';
+const debugEl = document.createElement('div');
+debugEl.className = 'debug-panel';
+const chatLogEl = document.createElement('div');
+chatLogEl.className = 'chat-log';
+
+metaRowEl.appendChild(stateChipEl);
+metaRowEl.appendChild(turnChipEl);
+metaEl.appendChild(metaRowEl);
+metaEl.appendChild(collectedEl);
+metaEl.appendChild(thinkingEl);
+metaEl.appendChild(debugEl);
+if (responseCardEl) {
+  responseCardEl.insertBefore(metaEl, responseTextEl);
+  responseCardEl.insertBefore(chatLogEl, responseTextEl.nextSibling);
+}
 
 const log = (message, payload) => {
   const timestamp = new Date().toISOString();
@@ -73,6 +121,43 @@ const applyTheme = (vertical) => {
   statusEl.textContent = `${theme.icon} ${theme.name} mode ready`;
 };
 
+const renderCollected = () => {
+  const name = collectedSnapshot.name || '-';
+  const date = collectedSnapshot.date || '-';
+  const time = collectedSnapshot.time || '-';
+  const phone = collectedSnapshot.phone || '-';
+  collectedEl.textContent = `Collected Info: name=${name}, date=${date}, time=${time}, phone=${phone}`;
+};
+
+const renderDebug = () => {
+  if (!DEBUG_MODE) {
+    debugEl.style.display = 'none';
+    return;
+  }
+  debugEl.style.display = 'block';
+  debugEl.textContent =
+    `Current state: ${currentConversationState}\n` +
+    `Last intent: ${lastIntent}\n` +
+    `Confidence: ${lastConfidence}\n` +
+    `Collected: ${JSON.stringify(collectedSnapshot)}\n` +
+    `Missing: ${JSON.stringify(missingSnapshot)}`;
+};
+
+const renderMeta = () => {
+  stateChipEl.textContent = `State: ${currentConversationState}`;
+  turnChipEl.textContent = `Turn ${turnCount} of ${MAX_TURNS}`;
+  renderCollected();
+  renderDebug();
+};
+
+const addChatBubble = (role, text) => {
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role === 'user' ? 'bubble-user' : 'bubble-ai'}`;
+  bubble.textContent = text;
+  chatLogEl.appendChild(bubble);
+  chatLogEl.scrollTop = chatLogEl.scrollHeight;
+};
+
 const setState = (nextState, statusText) => {
   state = nextState;
   micBtn.className = '';
@@ -80,6 +165,10 @@ const setState = (nextState, statusText) => {
   micBtn.disabled = nextState === 'processing' || nextState === 'speaking';
   if (statusText) {
     statusEl.textContent = statusText;
+  }
+  thinkingEl.style.display = nextState === 'processing' ? 'block' : 'none';
+  if (nextState === 'processing') {
+    thinkingEl.textContent = 'AI thinking...';
   }
   micBtn.textContent =
     nextState === 'idle'
@@ -99,6 +188,7 @@ const startTypingIndicator = () => {
   typingTimer = setInterval(() => {
     dots = (dots + 1) % 4;
     responseTextEl.textContent = `Processing${'.'.repeat(dots)}`;
+    thinkingEl.textContent = `AI thinking${'.'.repeat(dots)}`;
   }, 250);
 };
 
@@ -248,6 +338,21 @@ const handleSocketJson = async (data) => {
     responseStartedAt = Date.now();
     responseTextEl.textContent = data.text;
     activeStreamId = data.streamId || null;
+    turnCount += 1;
+    addChatBubble('assistant', data.text || '');
+    if (typeof data.state === 'string') {
+      currentConversationState = data.state;
+    }
+    if (data.context && typeof data.context === 'object') {
+      collectedSnapshot = data.context.collected || collectedSnapshot;
+      missingSnapshot = Array.isArray(data.context.missing) ? data.context.missing : missingSnapshot;
+    }
+    if (data.debug && typeof data.debug === 'object') {
+      lastIntent = data.debug.intent || lastIntent;
+      lastConfidence =
+        typeof data.debug.confidence === 'number' ? data.debug.confidence.toFixed(2) : lastConfidence;
+    }
+    renderMeta();
     if (data.audioUnavailable) {
       setState('idle', `${MSG.audioIssue} ${MSG.retry}`);
       return;
@@ -259,6 +364,7 @@ const handleSocketJson = async (data) => {
   if (data.type === 'transcript') {
     if (typeof data.text === 'string') {
       transcriptEl.value = data.text;
+      addChatBubble('user', data.text);
       log('asr.transcript', { text: data.text });
     }
     return;
@@ -375,6 +481,7 @@ const sendTranscript = (text) => {
     return;
   }
 
+  addChatBubble('user', transcript);
   setState('processing', 'AI is thinking...');
   startTypingIndicator();
   socket.send(
@@ -633,5 +740,6 @@ document.addEventListener('click', (event) => {
 audioPlayerEl.addEventListener('ended', () => setState('idle', 'Ready'));
 
 applyTheme(verticalEl.value);
+renderMeta();
 setState('idle', 'Ready');
 void connectWebSocket();

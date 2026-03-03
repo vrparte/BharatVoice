@@ -716,7 +716,13 @@ export const createVoiceWebSocketHandler = (
               audioUnavailable: true,
               state: generatedResponse.state,
               action: generatedResponse.action,
-              data: generatedResponse.data
+              data: generatedResponse.data,
+              context: {
+                collected: generatedResponse.updatedContext.collectedData,
+                missing: generatedResponse.updatedContext.missingFields,
+                retryCount: generatedResponse.updatedContext.retryCount
+              },
+              debug: generatedResponse.debug
             })
           );
           return;
@@ -738,7 +744,13 @@ export const createVoiceWebSocketHandler = (
             streamId,
             state: generatedResponse.state,
             action: generatedResponse.action,
-            data: generatedResponse.data
+            data: generatedResponse.data,
+            context: {
+              collected: generatedResponse.updatedContext.collectedData,
+              missing: generatedResponse.updatedContext.missingFields,
+              retryCount: generatedResponse.updatedContext.retryCount
+            },
+            debug: generatedResponse.debug
           })
         );
         socket.send(

@@ -65,3 +65,15 @@
 {"type":"message_sent","timestamp":"2026-03-03T19:02:36.731Z","sessionId":"6dfea549-d72a-491d-9663-8e9d13a9eb80","messageLength":46,"latencyMs":2086}
 {"type":"message_received","timestamp":"2026-03-03T19:02:50.782Z","sessionId":"6dfea549-d72a-491d-9663-8e9d13a9eb80","responseLength":53,"ttsLatencyMs":3585}
 {"type":"message_sent","timestamp":"2026-03-03T19:02:50.784Z","sessionId":"6dfea549-d72a-491d-9663-8e9d13a9eb80","messageLength":17,"latencyMs":3597}
+{"type":"demo_started","timestamp":"2026-03-03T19:17:24.905Z","sessionId":"982bc488-a477-4a15-8713-628ae62dcd5c","vertical":"dental","referrer":"http://localhost:3001","country":"unknown","city":"unknown","ipHash":"eff8e7ca506627fe15dda5e0e512fcaad70b6d520f37cc76597fdb4f2d83a1a3"}
+{"type":"message_received","timestamp":"2026-03-03T19:18:49.762Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","responseLength":70,"ttsLatencyMs":3301}
+{"type":"message_sent","timestamp":"2026-03-03T19:18:49.767Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","messageLength":48,"latencyMs":3358}
+{"type":"message_received","timestamp":"2026-03-03T19:20:26.456Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","responseLength":19,"ttsLatencyMs":2040}
+{"type":"message_sent","timestamp":"2026-03-03T19:20:26.459Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","messageLength":28,"latencyMs":2055}
+{"type":"message_received","timestamp":"2026-03-03T19:20:36.956Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","responseLength":24,"ttsLatencyMs":2148}
+{"type":"message_sent","timestamp":"2026-03-03T19:20:36.958Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","messageLength":15,"latencyMs":2154}
+{"type":"message_received","timestamp":"2026-03-03T19:20:45.463Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","responseLength":24,"ttsLatencyMs":0}
+{"type":"message_sent","timestamp":"2026-03-03T19:20:45.465Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","messageLength":29,"latencyMs":5}
+{"type":"message_received","timestamp":"2026-03-03T19:20:57.440Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","responseLength":53,"ttsLatencyMs":2977}
+{"type":"message_sent","timestamp":"2026-03-03T19:20:57.443Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","messageLength":5,"latencyMs":2986}
+{"type":"demo_completed","timestamp":"2026-03-03T20:03:58.494Z","sessionId":"6c12a67d-5e51-46be-8804-b3c64670ec94","durationSeconds":1,"turnCount":5,"outcome":"dropped"}

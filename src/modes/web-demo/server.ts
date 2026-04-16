@@ -21,6 +21,10 @@ const resolvePublicDirectory = (): string => {
   return path.resolve(__dirname, 'public');
 };
 
+const resolveLandingDirectory = (): string => {
+  return path.resolve(__dirname, '../../../website/landing-page');
+};
+
 const createCorsMiddleware = () => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const origin = req.headers.origin;
@@ -91,6 +95,15 @@ const publicDirectory = resolvePublicDirectory();
 app.use('/demo', express.static(publicDirectory));
 app.get('/demo', (_req: Request, res: Response): void => {
   res.sendFile(path.join(publicDirectory, 'index.html'));
+});
+
+const landingDirectory = resolveLandingDirectory();
+app.use('/landing', express.static(landingDirectory));
+app.get('/', (_req: Request, res: Response): void => {
+  res.sendFile(path.join(landingDirectory, 'index.html'));
+});
+app.get('/landing', (_req: Request, res: Response): void => {
+  res.sendFile(path.join(landingDirectory, 'index.html'));
 });
 
 app.get('/demo/audio/:audioId', (req: Request, res: Response): void => {

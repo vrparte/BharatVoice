@@ -3,177 +3,535 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BharatVoice | AI Receptionist for Indian Businesses</title>
+    <title>Receptr — AI Voice Receptionist for Indian Businesses</title>
     <meta
       name="description"
-      content="BharatVoice helps Indian clinics, garages, and law offices answer every call with a Hinglish AI receptionist."
+      content="Receptr is an AI voice receptionist for Indian businesses. Answers calls, handles FAQs, books appointments, and escalates to your team — in Hindi and English, 24/7."
     />
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/landing/styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div class="shell topbar-inner">
-        <div class="brand">BharatVoice</div>
-        <a class="btn btn-light" href="#cta">Start Free Trial</a>
-      </div>
-    </header>
+    <div class="site-shell">
 
-    <main>
-      <section class="hero">
-        <div class="shell hero-grid">
-          <div>
-            <p class="eyebrow">Voice AI for Bharat</p>
-            <h1>AI Receptionist for Indian Businesses</h1>
-            <p class="lead">
-              Stop losing leads after office hours. BharatVoice answers calls, understands Hinglish, and replies in
-              natural voice for your business.
-            </p>
-            <div class="hero-actions">
-              <a class="btn btn-primary" href="#cta">Start Free Trial</a>
-              <a class="btn btn-ghost" href="#demo">Try Live Demo</a>
+      <!-- ─── Navigation ─────────────────────────────────────── -->
+      <header class="topnav" id="top" role="banner">
+        <div class="nav-inner wrap">
+          <a class="wordmark" href="/" aria-label="Receptr — home">Receptr</a>
+
+          <nav class="nav-links" aria-label="Primary navigation">
+            <a href="#demo">Demo</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#proof">Why it works</a>
+          </nav>
+
+          <div class="nav-actions">
+            <button class="btn btn-nav" type="button" data-scroll-target="#leadCapture">
+              Book a setup call
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main id="main">
+
+        <!-- ─── Hero ───────────────────────────────────────────── -->
+        <section class="s-hero" aria-labelledby="hero-heading">
+          <div class="wrap hero-wrap">
+            <div class="hero-content">
+              <p class="kicker" aria-label="Product name">Receptr</p>
+              <h1 class="hero-h" id="hero-heading">
+                A smart voice<br class="hero-br" />
+                at your front desk,<br />
+                24/7.
+              </h1>
+              <p class="hero-sub">
+                Give your business its own voice.<br />
+                Every ring answered. Every caller heard.
+              </p>
+              <div class="cta-row">
+                <a class="btn btn-solid" href="#demo">Try the live voice demo</a>
+                <button class="btn btn-ghost" type="button" data-scroll-target="#leadCapture">
+                  Book a setup call
+                </button>
+              </div>
+              <div class="trust-strip" role="list" aria-label="Key features">
+                <span role="listitem">Hindi + English</span>
+                <span class="trust-sep" aria-hidden="true"></span>
+                <span role="listitem">Appointments &amp; FAQs</span>
+                <span class="trust-sep" aria-hidden="true"></span>
+                <span role="listitem">Escalates when needed</span>
+              </div>
+            </div>
+
+            <!-- Decorative product preview — hidden on mobile -->
+            <div class="hero-visual" aria-hidden="true">
+              <div class="hv-card">
+                <div class="hv-card-hd">
+                  <span class="hv-pulse"></span>
+                  <span>Live call · Dental Clinic</span>
+                </div>
+                <div class="hv-msgs">
+                  <div class="hv-msg hv-msg-caller">"Kal 11 baje appointment chahiye."</div>
+                  <div class="hv-msg hv-msg-ai">Bilkul! 11 AM kal ke liye slot available hai. Aapka naam?</div>
+                  <div class="hv-msg hv-msg-caller">"Priya Sharma."</div>
+                  <div class="hv-msg hv-msg-ai">Perfect Priya — appointment confirm ho gaya. Kal 11 AM. See you!</div>
+                </div>
+                <div class="hv-captured">
+                  <span class="hv-cap-check">✓</span>
+                  <div class="hv-cap-detail">
+                    <span class="hv-cap-label">Captured</span>
+                    <span class="hv-cap-val">Priya Sharma · Tomorrow, 11 AM</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ─── Framing ────────────────────────────────────────── -->
+        <section class="s-framing" aria-labelledby="framing-heading">
+          <div class="wrap">
+            <h2 class="sr-only" id="framing-heading">What makes Receptr different</h2>
+            <div class="framing-grid">
+
+              <article class="frame-card">
+                <h3>Not another IVR.</h3>
+                <p>
+                  Receptr speaks like a real receptionist, not "Press 1, press 2". It understands
+                  natural questions and responds in Hindi&nbsp;+&nbsp;English.
+                </p>
+              </article>
+
+              <article class="frame-card">
+                <h3>Invisible, until it&nbsp;matters.</h3>
+                <p>
+                  It quietly answers calls in the background. You only see the summaries, new
+                  leads, and calls that need your attention.
+                </p>
+              </article>
+
+              <article class="frame-card">
+                <h3>Built for small&nbsp;teams.</h3>
+                <p>
+                  No dashboards to babysit. We set up your call flows; Receptr just works,
+                  24/7.
+                </p>
+              </article>
+
             </div>
           </div>
-          <div class="hero-card">
-            <h2>Live Voice Demo</h2>
-            <p>Speak a transcript and hear real-time AI voice response.</p>
-            <iframe
-              title="BharatVoice Demo"
-              loading="lazy"
-              src="/demo"
-              class="demo-frame"
-              referrerpolicy="no-referrer"
-            ></iframe>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section class="problem section">
-        <div class="shell">
-          <h2>Missed Calls = Lost Revenue</h2>
-          <div class="stats">
-            <article class="stat-card">
-              <h3>6.45 crore</h3>
-              <p>MSMEs registered in India, where every incoming enquiry call matters.</p>
-            </article>
-            <article class="stat-card">
-              <h3>11.1 crore</h3>
-              <p>People employed by MSMEs, showing the scale of service businesses needing call handling.</p>
-            </article>
-            <article class="stat-card">
-              <h3>1,090.91 million</h3>
-              <p>Active wireless subscribers in India, a massive inbound-call opportunity for local businesses.</p>
-            </article>
-          </div>
-          <p class="source-note">
-            Sources: Ministry of MSME (RAMP portal, June 11, 2025) and TRAI telecom subscription release (November 30,
-            2025).
-          </p>
-        </div>
-      </section>
+        <!-- ─── Demo ───────────────────────────────────────────── -->
+        <section id="demo" class="s-demo" aria-labelledby="demo-heading">
+          <div class="wrap-xl">
+            <header class="section-hd section-hd--center">
+              <p class="kicker">Live product demo</p>
+              <h2 id="demo-heading">Like having a front desk<br class="demo-br" />on every call</h2>
+              <p class="section-lede">
+                Try the voice demo and hear how Receptr answers, responds, and keeps the
+                conversation moving — in Hindi or English.
+              </p>
+            </header>
 
-      <section class="solution section">
-        <div class="shell">
-          <h2>How It Works</h2>
-          <div class="flow">
-            <div class="flow-step">
-              <span>1</span>
-              <h3>Call</h3>
-              <p>Customer calls your number.</p>
+            <div class="demo-surface" role="region" aria-label="Interactive voice demo">
+              <iframe
+                title="Receptr live voice demo"
+                src="/demo"
+                class="demo-frame"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+                allow="microphone"
+              ></iframe>
             </div>
-            <div class="flow-arrow">→</div>
-            <div class="flow-step">
-              <span>2</span>
-              <h3>AI</h3>
-              <p>BharatVoice listens, understands, and responds in Hinglish.</p>
-            </div>
-            <div class="flow-arrow">→</div>
-            <div class="flow-step">
-              <span>3</span>
-              <h3>Booking</h3>
-              <p>Qualified lead captured and pushed to your workflow.</p>
+
+            <div class="demo-bridge">
+              <div class="db-left">
+                <p class="db-headline">That's Receptr on every call — automatic, consistent, available 24/7.</p>
+                <p class="db-sub">Set up takes a week. Every call after that is handled.</p>
+              </div>
+              <button class="btn btn-solid" type="button" data-scroll-target="#leadCapture">
+                Get Receptr for my business
+              </button>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="demo" class="demo section">
-        <div class="shell">
-          <h2>Live Demo</h2>
-          <p class="lead-small">Test the same voice stack used in telephony mode.</p>
-          <iframe
-            title="BharatVoice Full Demo"
-            loading="lazy"
-            src="/demo"
-            class="demo-frame full"
-            referrerpolicy="no-referrer"
-          ></iframe>
-        </div>
-      </section>
+        <!-- ─── How it works ──────────────────────────────────── -->
+        <section id="how-it-works" class="s-how" aria-labelledby="how-heading">
+          <div class="wrap">
+            <header class="section-hd">
+              <p class="kicker">How it works</p>
+              <h2 id="how-heading">Three quiet steps.<br />One reliable front desk.</h2>
+            </header>
 
-      <section class="verticals section">
-        <div class="shell">
-          <h2>Built for Indian Service Verticals</h2>
-          <div class="tab-head" role="tablist" aria-label="Verticals">
-            <button class="tab-btn active" data-tab="dental" role="tab" aria-selected="true">Dental</button>
-            <button class="tab-btn" data-tab="auto" role="tab" aria-selected="false">Auto</button>
-            <button class="tab-btn" data-tab="legal" role="tab" aria-selected="false">Legal</button>
-          </div>
-          <div class="tab-panel active" id="tab-dental" role="tabpanel">
-            <ul>
-              <li>Appointment enquiry capture</li>
-              <li>Clinic timings and doctor availability responses</li>
-              <li>Follow-up callback scheduling</li>
-            </ul>
-          </div>
-          <div class="tab-panel" id="tab-auto" role="tabpanel">
-            <ul>
-              <li>Service booking intent handling</li>
-              <li>Pickup/drop query support</li>
-              <li>Job-card callback request capture</li>
-            </ul>
-          </div>
-          <div class="tab-panel" id="tab-legal" role="tabpanel">
-            <ul>
-              <li>Case intake pre-screening</li>
-              <li>Consultation slot request collection</li>
-              <li>Document callback follow-up routing</li>
-            </ul>
-          </div>
-        </div>
-      </section>
+            <div class="steps-grid">
 
-      <section class="pricing section">
-        <div class="shell">
-          <h2>Simple Pricing</h2>
-          <div class="pricing-card">
-            <p class="price"><span>₹2,999</span>/month</p>
-            <p>Compared to ~₹15,000/month for one human receptionist shift.</p>
-            <a class="btn btn-primary" href="#cta">Start Free Trial</a>
+              <article class="step-card">
+                <span class="step-num" aria-hidden="true">01</span>
+                <h3>Receptr answers every call.</h3>
+                <p>
+                  Your number rings, our AI receptionist picks up instantly, in Hindi + English.
+                </p>
+              </article>
+
+              <article class="step-card">
+                <span class="step-num" aria-hidden="true">02</span>
+                <h3>Understands and helps.</h3>
+                <p>
+                  It handles questions, shares timings and pricing, and books or reschedules
+                  appointments.
+                </p>
+              </article>
+
+              <article class="step-card">
+                <span class="step-num" aria-hidden="true">03</span>
+                <h3>Sends you the essentials.</h3>
+                <p>
+                  You get a quick summary of calls, missed leads, and anything needing your
+                  attention.
+                </p>
+              </article>
+
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="cta" class="cta section">
-        <div class="shell cta-box">
-          <h2>Start Free Trial</h2>
-          <p>Enter your phone number and we will call you back with a setup walkthrough.</p>
-          <form id="callbackForm" class="callback-form">
-            <input
-              id="phoneInput"
-              type="tel"
-              inputmode="numeric"
-              pattern="[0-9]{10}"
-              placeholder="Enter 10-digit mobile number"
-              required
-              aria-label="Phone number"
-            />
-            <button class="btn btn-primary" type="submit">Request Callback</button>
-          </form>
-          <p id="callbackMsg" class="callback-msg" aria-live="polite"></p>
-        </div>
-      </section>
-    </main>
+        <!-- ─── Who it helps ──────────────────────────────────── -->
+        <section class="s-persona" aria-labelledby="persona-heading">
+          <div class="wrap">
+            <header class="section-hd">
+              <p class="kicker">Who it helps</p>
+              <h2 id="persona-heading">From the front desk<br />to the back office.</h2>
+            </header>
 
-    <script src="./landing.js" defer></script>
+            <div class="persona-grid">
+
+              <article class="persona-card">
+                <p class="persona-role">Clinic owners</p>
+                <h3>Never miss a patient call again.</h3>
+                <p>Turn missed calls into booked appointments, even after hours.</p>
+              </article>
+
+              <article class="persona-card">
+                <p class="persona-role">Reception staff</p>
+                <h3>Offload routine calls, focus on visitors.</h3>
+                <p>Let Receptr handle repetitive questions so your team can stay present.</p>
+              </article>
+
+              <article class="persona-card">
+                <p class="persona-role">Operations</p>
+                <h3>Track volumes without spreadsheets.</h3>
+                <p>See what matters quickly, without listening back to every call.</p>
+              </article>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── Capabilities ───────────────────────────────────── -->
+        <section class="s-capabilities" aria-labelledby="cap-heading">
+          <div class="wrap">
+            <header class="section-hd">
+              <p class="kicker">What it does</p>
+              <h2 id="cap-heading">Everything your front desk<br />handles today — automated.</h2>
+            </header>
+
+            <div class="cap-grid">
+
+              <div class="cap-item">
+                <h4>Answers inbound calls</h4>
+                <p>Picks up every call instantly, no rings missed, no voicemails missed.</p>
+              </div>
+
+              <div class="cap-item">
+                <h4>Handles FAQs</h4>
+                <p>Timings, location, services, pricing — handled without staff involvement.</p>
+              </div>
+
+              <div class="cap-item">
+                <h4>Books &amp; reschedules</h4>
+                <p>Confirms appointments, collects details, and manages rescheduling requests.</p>
+              </div>
+
+              <div class="cap-item">
+                <h4>Captures lead details</h4>
+                <p>Gathers caller name, intent, and contact for every new enquiry.</p>
+              </div>
+
+              <div class="cap-item">
+                <h4>Escalates urgent calls</h4>
+                <p>Knows when to loop in a human and hands off cleanly, every time.</p>
+              </div>
+
+              <div class="cap-item">
+                <h4>Sends call summaries</h4>
+                <p>You receive a quick brief of what happened on every important call.</p>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── Trust ──────────────────────────────────────────── -->
+        <section class="s-trust" aria-labelledby="trust-heading">
+          <div class="wrap">
+            <div class="trust-panel">
+              <header class="trust-hd">
+                <p class="kicker">Built for Indian businesses</p>
+                <h2 id="trust-heading">Designed for the way<br />your callers actually speak.</h2>
+              </header>
+
+              <ul class="trust-list" aria-label="Trust points">
+                <li>
+                  <span class="trust-mark" aria-hidden="true">✦</span>
+                  <div>
+                    <strong>Hindi, English, and Hinglish ready</strong>
+                    <p>Natural code-mixed conversation — the way Indian callers actually talk.</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="trust-mark" aria-hidden="true">✦</span>
+                  <div>
+                    <strong>Customizable for your workflows</strong>
+                    <p>We configure call flows, scripts, and escalation rules for your business type.</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="trust-mark" aria-hidden="true">✦</span>
+                  <div>
+                    <strong>Human handoff built in</strong>
+                    <p>When a caller needs a real person, Receptr knows how to pass the call cleanly.</p>
+                  </div>
+                </li>
+                <li>
+                  <span class="trust-mark" aria-hidden="true">✦</span>
+                  <div>
+                    <strong>Always on, even after hours</strong>
+                    <p>No missed calls at 8 PM or on Sundays. Every caller gets a response.</p>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── Social proof ──────────────────────────────────── -->
+        <section id="proof" class="s-proof" aria-labelledby="proof-heading">
+          <div class="wrap">
+            <header class="section-hd section-hd--center">
+              <p class="kicker">What teams say</p>
+              <h2 id="proof-heading">Designed for the calls<br />you can't afford to miss.</h2>
+            </header>
+
+            <div class="quote-grid">
+
+              <figure class="quote-card">
+                <blockquote>
+                  "Receptr made it feel like we finally had someone answering every call."
+                </blockquote>
+                <figcaption>A. Sharma — Clinic owner</figcaption>
+              </figure>
+
+              <figure class="quote-card">
+                <blockquote>
+                  "Routine questions stopped interrupting our team all day."
+                </blockquote>
+                <figcaption>P. Mehta — Salon manager</figcaption>
+              </figure>
+
+              <figure class="quote-card">
+                <blockquote>
+                  "We knew which calls needed attention without checking everything ourselves."
+                </blockquote>
+                <figcaption>R. Nair — Operations lead</figcaption>
+              </figure>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ─── FAQ + Final CTA ────────────────────────────────── -->
+        <section id="leadCapture" class="s-faq" aria-labelledby="faq-heading">
+          <div class="wrap">
+
+            <div class="faq-block">
+              <header class="section-hd">
+                <p class="kicker">Questions</p>
+                <h2 id="faq-heading">What business owners<br />ask us first.</h2>
+              </header>
+
+              <dl class="faq-list">
+
+                <details class="faq-item">
+                  <summary>How does Receptr actually answer calls?</summary>
+                  <p>
+                    Receptr connects to your existing phone number via telephony integration.
+                    When a call comes in, the AI receptionist picks up, greets the caller by
+                    your business name, and handles the conversation — just like a human would.
+                  </p>
+                </details>
+
+                <details class="faq-item">
+                  <summary>Can it speak Hindi and English?</summary>
+                  <p>
+                    Yes. Receptr is built for natural Hindi, English, and Hinglish — the way
+                    Indian callers actually speak. It understands code-mixed sentences and
+                    responds naturally in the same language pattern.
+                  </p>
+                </details>
+
+                <details class="faq-item">
+                  <summary>Can it transfer calls to a human?</summary>
+                  <p>
+                    Yes. When a caller needs personal attention or raises an urgent issue,
+                    Receptr hands the call off to a designated team member or number cleanly,
+                    with context already gathered.
+                  </p>
+                </details>
+
+                <details class="faq-item">
+                  <summary>Can it handle bookings and common questions?</summary>
+                  <p>
+                    Yes. It can collect appointment details, confirm bookings, answer FAQs about
+                    timing, pricing, location, and services — and escalate when a question is
+                    outside its scope.
+                  </p>
+                </details>
+
+                <details class="faq-item">
+                  <summary>How long does setup take?</summary>
+                  <p>
+                    We handle the full onboarding. A typical setup — connecting your number,
+                    configuring call flows, and testing — takes two to five business days depending
+                    on your business type.
+                  </p>
+                </details>
+
+                <details class="faq-item">
+                  <summary>Is it suitable for my type of business?</summary>
+                  <p>
+                    Receptr works for any business that receives regular inbound calls — clinics,
+                    salons, diagnostic centers, coaching institutes, real estate offices, and
+                    similar Indian SMBs. If your front desk handles calls, Receptr can help.
+                  </p>
+                </details>
+
+              </dl>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ─── Final CTA ──────────────────────────────────────── -->
+        <section class="s-cta" aria-labelledby="cta-heading">
+          <div class="wrap-sm">
+            <div class="cta-panel">
+              <h2 id="cta-heading">
+                The calls that cost you most are the ones you don't pick up.
+              </h2>
+              <p class="cta-sub">Let Receptr answer them for you.</p>
+
+              <div class="cta-panel-actions">
+                <button
+                  class="btn btn-solid btn-lg"
+                  type="button"
+                  data-scroll-target="#leadForm"
+                  id="openLeadForm"
+                >
+                  Get Receptr for my business
+                </button>
+              </div>
+
+              <form
+                id="leadForm"
+                class="lead-form hidden"
+                aria-label="Request setup call"
+                novalidate
+              >
+                <div class="lead-row">
+                  <div class="lead-field">
+                    <label for="leadName">Your name</label>
+                    <input
+                      id="leadName"
+                      type="text"
+                      placeholder="Full name"
+                      autocomplete="name"
+                      required
+                    />
+                  </div>
+                  <div class="lead-field">
+                    <label for="leadBusiness">Business name</label>
+                    <input
+                      id="leadBusiness"
+                      type="text"
+                      placeholder="Business or clinic name"
+                      autocomplete="organization"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="lead-row">
+                  <div class="lead-field">
+                    <label for="leadPhone">Mobile number</label>
+                    <input
+                      id="leadPhone"
+                      type="tel"
+                      inputmode="numeric"
+                      placeholder="10-digit mobile number"
+                      autocomplete="tel"
+                      required
+                    />
+                  </div>
+                  <div class="lead-field">
+                    <label for="leadCity">City</label>
+                    <input
+                      id="leadCity"
+                      type="text"
+                      placeholder="City"
+                      autocomplete="address-level2"
+                      required
+                    />
+                  </div>
+                </div>
+                <button class="btn btn-solid btn-full" type="submit">
+                  Get Receptr for my business
+                </button>
+                <p id="leadMsg" class="lead-msg" aria-live="polite" role="status"></p>
+              </form>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- ─── Footer ─────────────────────────────────────────── -->
+      <footer class="site-footer" role="contentinfo">
+        <div class="footer-inner wrap">
+          <div class="footer-brand">
+            <p class="wordmark">Receptr</p>
+            <p class="footer-sub">AI receptionist for Indian businesses.</p>
+          </div>
+
+          <nav class="footer-links" aria-label="Footer navigation">
+            <a href="#demo">Demo</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#leadCapture">Setup</a>
+          </nav>
+
+          <p class="footer-copy">&copy; 2025 Receptr. All rights reserved.</p>
+        </div>
+      </footer>
+
+    </div><!-- /site-shell -->
+
+    <script src="/landing/landing.js" defer></script>
   </body>
 </html>

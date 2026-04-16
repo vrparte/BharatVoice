@@ -1,3 +1,5 @@
+import type { ConversationCollectedData } from '../conversation/state-machine';
+
 export type IVerticalType = 'dental' | 'auto' | 'legal';
 
 export interface IIntent {
@@ -12,6 +14,10 @@ export interface IVerticalEntities {
   date?: string;
   time?: string;
   serviceType?: string;
+  doctor?: string;
+  carModel?: string;
+  carProblem?: string;
+  caseType?: string;
 }
 
 export abstract class BaseVertical {
@@ -24,6 +30,10 @@ export abstract class BaseVertical {
   public abstract validateEntity(entity: string, value: string): boolean;
 
   public abstract getRequiredEntities(): string[];
+
+  public abstract getNextQuestion(field: string, data: ConversationCollectedData): string;
+
+  public abstract getConfirmationText(data: ConversationCollectedData): string;
 
   public detectIntent(text: string): IIntent | null {
     const normalized = text.toLowerCase();
@@ -78,7 +88,7 @@ export abstract class BaseVertical {
 
     if (missingEntity) {
       return {
-        text: `${this.getGreeting()} Kripya apna ${missingEntity} share kariye.`,
+        text: this.getNextQuestion(missingEntity, entities as unknown as ConversationCollectedData),
         intentName: detectedIntent?.name ?? null
       };
     }

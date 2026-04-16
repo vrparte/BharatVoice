@@ -347,6 +347,13 @@ export class SarvamService {
 
     const voiceProfile = SARVAM_VOICE_PROFILES[voice];
 
+    logger.info('TTS request payload', {
+      finalText: normalizedText,
+      target_language_code: voiceProfile.targetLanguageCode,
+      speaker: voiceProfile.sarvamSpeaker,
+      model: SARVAM_TTS_MODEL
+    });
+
     for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
       const startedAtMs = this.nowFn();
 

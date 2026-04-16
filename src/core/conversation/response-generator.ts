@@ -1,14 +1,16 @@
-import type { BaseVertical } from '../verticals/base-vertical';
-import { Intent, IntentClassifier } from '../nlu/intent-classifier';
+import { VoiceService } from '../../services/voice.service';
+import type { ISarvamTtsVoice } from '../../types/sarvam.types';
 import type { ExtractedEntities } from '../nlu/intent-classifier';
+import { Intent, IntentClassifier } from '../nlu/intent-classifier';
+import type { BaseVertical } from '../verticals/base-vertical';
+
 import {
   ConversationState,
+  type ConversationCollectedData,
   type ConversationContext,
   type ConversationHistoryItem,
   ConversationStateMachine
 } from './state-machine';
-import { VoiceService } from '../../services/voice.service';
-import type { ISarvamTtsVoice } from '../../types/sarvam.types';
 
 export interface ResponseObject {
   readonly text: string;
@@ -39,21 +41,15 @@ interface ResponseGeneratorDependencies {
 
 const toStateEntities = (entities: ExtractedEntities): Record<string, string> => {
   const mapped: Record<string, string> = {};
-  if (entities.name) {
-    mapped.name = entities.name;
-  }
-  if (entities.date) {
-    mapped.date = entities.date;
-  }
-  if (entities.time) {
-    mapped.time = entities.time;
-  }
-  if (entities.phone) {
-    mapped.phone = entities.phone;
-  }
-  if (entities.service) {
-    mapped.service = entities.service;
-  }
+  if (entities.name)       mapped.name = entities.name;
+  if (entities.date)       mapped.date = entities.date;
+  if (entities.time)       mapped.time = entities.time;
+  if (entities.phone)      mapped.phone = entities.phone;
+  if (entities.service)    mapped.service = entities.service;
+  if (entities.doctor)     mapped.doctor = entities.doctor;
+  if (entities.carModel)   mapped.carModel = entities.carModel;
+  if (entities.carProblem) mapped.carProblem = entities.carProblem;
+  if (entities.caseType)   mapped.caseType = entities.caseType;
   return mapped;
 };
 
@@ -77,22 +73,18 @@ const patchCorrectionEntities = (input: string, entities: ExtractedEntities): Ex
 const renderContextualText = (
   state: ConversationState,
   fallbackText: string,
-  context: ConversationContext
+  context: ConversationContext,
+  vertical: BaseVertical
 ): string => {
   if (state === ConversationState.GREETING) {
     return fallbackText;
   }
   if (state === ConversationState.CONFIRMING) {
-    const name = context.collectedData.name ?? 'ji';
-    const date = context.collectedData.date ?? 'selected date';
-    const time = context.collectedData.time ?? 'selected time';
-    return `Theek hai, ${name} ji, ${date} ko ${time}. Sahi hai?`;
+    return vertical.getConfirmationText(context.collectedData);
   }
   if (state === ConversationState.CLOSING) {
-    const name = context.collectedData.name ?? 'ji';
-    const date = context.collectedData.date ?? 'selected date';
-    const time = context.collectedData.time ?? 'selected time';
-    return `Shukriya! Theek hai ${name} ji, ${date} ${time} appointment confirm hai. Kuch aur madad chahiye?`;
+    return vertical.getConfirmationText(context.collectedData).replace('सही है?', '') +
+      ' — booking confirm हो गई। धन्यवाद!';
   }
   return fallbackText;
 };
@@ -112,7 +104,10 @@ export class ResponseGenerator {
   public constructor(vertical: BaseVertical, dependencies?: ResponseGeneratorDependencies) {
     this.vertical = vertical;
     this.intentClassifier = dependencies?.intentClassifier ?? new IntentClassifier();
-    this.stateMachine = dependencies?.stateMachine ?? new ConversationStateMachine();
+    this.stateMachine = dependencies?.stateMachine ?? new ConversationStateMachine(
+      vertical.getRequiredEntities(),
+      (field: string, data: ConversationCollectedData) => vertical.getNextQuestion(field, data)
+    );
     this.voiceService = dependencies?.voiceService ?? new VoiceService();
     this.bookingExecutor = dependencies?.bookingExecutor;
     this.createAudioUrl = dependencies?.createAudioUrl;
@@ -148,13 +143,42 @@ export class ResponseGenerator {
     const normalizedInput = input.trim();
     const classification = this.intentClassifier.classify(normalizedInput);
     const recoveredEntities = patchCorrectionEntities(normalizedInput, classification.entities);
-    const effectiveIntent = classification.confidence < 0.6 ? Intent.FALLBACK : classification.intent;
+    const entityCount = Object.values(recoveredEntities).filter((v) => v !== undefined).length;
+    const prevState = this.stateMachine.currentState;
+
+    // Intent arbitration: when the user confirms AND provides new slot data while
+    // still in COLLECTING_INFO, prefer PROVIDE_INFO so slot-filling continues
+    // rather than jumping to CLOSING prematurely.
+    const effectiveIntent = (() => {
+      if (classification.confidence < 0.6) return Intent.FALLBACK;
+      if (
+        classification.intent === Intent.CONFIRM &&
+        entityCount > 0 &&
+        prevState === ConversationState.COLLECTING_INFO
+      ) {
+        return Intent.PROVIDE_INFO;
+      }
+      return classification.intent;
+    })();
+
     const transition = this.stateMachine.transition(effectiveIntent, toStateEntities(recoveredEntities));
     const responseText = renderContextualText(
       transition.newState,
       transition.response,
-      this.stateMachine.context
+      this.stateMachine.context,
+      this.vertical
     );
+
+    console.info('[dialogue]', JSON.stringify({
+      transcript: normalizedInput,
+      intent: effectiveIntent,
+      confidence: classification.confidence,
+      entities: recoveredEntities,
+      prevState,
+      newState: transition.newState,
+      missingFields: this.stateMachine.context.missingFields,
+      response: responseText
+    }));
 
     this.stateMachine.addHistory({
       role: 'user',
@@ -184,19 +208,14 @@ export class ResponseGenerator {
         });
       } catch {
         action = 'transfer';
-        data = {
-          reason: 'booking_failed'
-        };
+        data = { reason: 'booking_failed' };
         return {
           text: 'Maaf kijiye, booking mein issue aa gaya. Main aapko human support se connect karta hoon.',
           state: this.stateMachine.currentState,
           updatedContext: this.stateMachine.context,
           extractedData: recoveredEntities,
           history: this.stateMachine.getHistory(),
-          debug: {
-            intent: effectiveIntent,
-            confidence: classification.confidence
-          },
+          debug: { intent: effectiveIntent, confidence: classification.confidence },
           action,
           data
         };
@@ -214,10 +233,7 @@ export class ResponseGenerator {
         updatedContext: this.stateMachine.context,
         extractedData: recoveredEntities,
         history: this.stateMachine.getHistory(),
-        debug: {
-          intent: effectiveIntent,
-          confidence: classification.confidence
-        },
+        debug: { intent: effectiveIntent, confidence: classification.confidence },
         audioUrl,
         action,
         data
@@ -229,10 +245,7 @@ export class ResponseGenerator {
         updatedContext: this.stateMachine.context,
         extractedData: recoveredEntities,
         history: this.stateMachine.getHistory(),
-        debug: {
-          intent: effectiveIntent,
-          confidence: classification.confidence
-        },
+        debug: { intent: effectiveIntent, confidence: classification.confidence },
         action,
         data
       };

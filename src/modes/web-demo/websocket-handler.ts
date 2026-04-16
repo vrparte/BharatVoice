@@ -4,14 +4,12 @@ import { deflateSync } from 'zlib';
 
 import type { WebSocket } from 'ws';
 
-import { createVerticalService, detectVerticalFromLanguage } from '../../core/verticals';
-import type { ConversationContext } from '../../core/conversation/state-machine';
-import { ConversationState } from '../../core/conversation/state-machine';
 import { ResponseGenerator } from '../../core/conversation/response-generator';
+import { ConversationState, type ConversationContext } from '../../core/conversation/state-machine';
+import { createVerticalService, detectVerticalFromLanguage } from '../../core/verticals';
 import type { ICoreConversationMessage, VoiceAgentCoreService } from '../../core/voice-agent-core.service';
 import { SarvamService } from '../../services/sarvam.service';
 import type { ISarvamAsrLanguage } from '../../types/sarvam.types';
-import type { ISarvamTtsVoice } from '../../types/sarvam.types';
 
 import type { WebDemoAnalyticsTracker } from './analytics';
 import { webDemoConfig } from './config';
@@ -212,9 +210,11 @@ const appendConversationItem = (
   item: IConversationHistoryItem
 ): IConversationHistoryItem[] => [...session.conversationHistory, item];
 
-const defaultConversationContext = (): ConversationContext & { readonly state: ConversationState } => ({
+const defaultConversationContext = (
+  requiredFields: readonly string[]
+): ConversationContext & { readonly state: ConversationState } => ({
   state: ConversationState.GREETING,
-  missingFields: ['name', 'date', 'time', 'phone'],
+  missingFields: [...requiredFields],
   collectedData: {},
   retryCount: 0
 });
@@ -396,7 +396,10 @@ export const createVoiceWebSocketHandler = (
         }
 
         if (isInitMessage(parsed)) {
-          const initSessionId = parsed.sessionId ?? activeSession?.sessionId;
+          // Only reuse an existing session when the client explicitly sends its sessionId.
+          // No sessionId in the message means a fresh start (e.g. Restart Demo), so always
+          // create a new session to guarantee no previously collected data bleeds through.
+          const initSessionId = parsed.sessionId ?? undefined;
           const existing = initSessionId ? sessionStore.getSession(initSessionId) : null;
           const selectedVertical = resolveVertical(parsed.vertical);
           const nextSession = existing ?? sessionStore.createSession(selectedVertical, metadata);
@@ -433,23 +436,6 @@ export const createVoiceWebSocketHandler = (
               }
             })
           );
-
-          if (parsed.preloadVoices) {
-            const greetingCacheKey = `${activeSession.vertical}|${verticalService.getGreeting()}|${audioProfile.actualFormat}`;
-            if (!getCachedAudio(greetingCacheKey)) {
-              try {
-                const result = await coreService.synthesizeFromContext({
-                  responseText: verticalService.getGreeting(),
-                  vertical: activeSession.vertical,
-                  sessionId: activeSession.sessionId,
-                  history: []
-                });
-                setCachedAudio(greetingCacheKey, result.audio);
-              } catch {
-                errorManager.markTtsFailure(activeSession.sessionId, 'Voice preload failed');
-              }
-            }
-          }
           return;
         }
 
@@ -621,13 +607,12 @@ export const createVoiceWebSocketHandler = (
         }
 
         const history = toCoreHistory(updatedBeforeCore.conversationHistory);
-        const existingContext = updatedBeforeCore.conversationContext ?? defaultConversationContext();
+        const existingContext = updatedBeforeCore.conversationContext ?? defaultConversationContext(verticalService.getRequiredEntities());
         let responseGenerator = sessionResponseGenerators.get(updatedBeforeCore.sessionId);
         if (!responseGenerator) {
           responseGenerator = new ResponseGenerator(verticalService, {
             voiceService: {
-              synthesizeSpeech: async (_text: string, _voice: ISarvamTtsVoice): Promise<Buffer> =>
-                Buffer.from([0]),
+              synthesizeSpeech: (): Promise<Buffer> => Promise.resolve(Buffer.from([0])),
               getAudioContentType: (): string => 'audio/wav'
             }
           });

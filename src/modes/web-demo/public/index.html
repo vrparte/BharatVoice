@@ -3,46 +3,268 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BharatVoice Web Demo</title>
+    <title>Receptr — Live Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/demo/styles.css" />
   </head>
   <body>
-    <main class="container">
-      <h1>BharatVoice Voice Demo</h1>
-      <p class="subtitle">WebSocket transport demo for Hinglish echo flow</p>
 
-      <section class="card">
-        <div class="row">
-          <label for="vertical">Vertical</label>
-          <select id="vertical">
-            <option value="dental">dental</option>
-            <option value="auto">auto</option>
-            <option value="legal">legal</option>
-          </select>
+    <div class="studio">
+
+      <!-- ─── Left: Setup Panel ──────────────────────────────────── -->
+      <aside class="panel panel-setup" aria-label="Demo setup">
+
+        <div class="setup-header">
+          <span class="setup-wordmark">Receptr</span>
         </div>
 
-        <div class="row">
-          <label for="transcript">Transcript</label>
-          <textarea id="transcript" rows="3" placeholder="Type Hinglish transcript..."></textarea>
+        <div class="setup-section">
+          <p class="setup-label">Scenario</p>
+          <div class="scenario-list" id="scenarioCards">
+            <button class="scenario-item is-active" type="button" data-scenario-key="dental">
+              <span class="si-dot" aria-hidden="true"></span>
+              <span class="si-icon" aria-hidden="true">🦷</span>
+              <span class="si-name">Dental Clinic</span>
+            </button>
+            <button class="scenario-item" type="button" data-scenario-key="auto">
+              <span class="si-dot" aria-hidden="true"></span>
+              <span class="si-icon" aria-hidden="true">🔧</span>
+              <span class="si-name">Auto Garage</span>
+            </button>
+            <button class="scenario-item" type="button" data-scenario-key="legal">
+              <span class="si-dot" aria-hidden="true"></span>
+              <span class="si-icon" aria-hidden="true">⚖️</span>
+              <span class="si-name">Law Office</span>
+            </button>
+          </div>
         </div>
 
-        <div class="actions">
-          <button id="connectBtn" type="button">Connect</button>
-          <button id="sendBtn" type="button">Send Transcript</button>
+        <div class="setup-section">
+          <p class="setup-label">Language</p>
+          <div class="lang-row">
+            <button class="lang-pill is-active" type="button" data-lang-key="hinglish">Hinglish</button>
+            <button class="lang-pill" type="button" data-lang-key="hindi">Hindi</button>
+            <button class="lang-pill" type="button" data-lang-key="english">English</button>
+          </div>
         </div>
-      </section>
 
-      <section class="card">
-        <h2>Response</h2>
-        <pre id="responseText">No response yet</pre>
-        <audio id="audioPlayer" controls></audio>
-      </section>
+        <div class="setup-section">
+          <p class="setup-label">Try asking</p>
+          <div class="setup-chips">
+            <button
+              class="setup-chip starter-btn"
+              type="button"
+              data-starter="booking"
+              data-vertical="dental"
+              data-sample="Can I book an appointment for tomorrow?"
+            >Book appointment</button>
+            <button
+              class="setup-chip starter-btn"
+              type="button"
+              data-starter="timing"
+              data-vertical="dental"
+              data-sample="What are your timings today?"
+            >Ask timings</button>
+            <button
+              class="setup-chip starter-btn"
+              type="button"
+              data-starter="service"
+              data-vertical="auto"
+              data-sample="Do you offer home service?"
+            >Home service?</button>
+            <button
+              class="setup-chip starter-btn"
+              type="button"
+              data-starter="reschedule"
+              data-vertical="dental"
+              data-sample="I need to reschedule my appointment."
+            >Reschedule</button>
+            <button
+              class="setup-chip starter-btn"
+              type="button"
+              data-starter="legal_consult"
+              data-vertical="legal"
+              data-sample="I need legal advice for a property matter."
+            >Legal consult</button>
+          </div>
+        </div>
 
-      <section class="card">
-        <h2>Logs</h2>
-        <pre id="logs"></pre>
-      </section>
-    </main>
+        <!-- Hidden selects — wired to existing JS logic, unchanged -->
+        <select id="vertical" class="sr-only" aria-hidden="true" tabindex="-1">
+          <option value="dental">Clinic / Dental</option>
+          <option value="auto">Auto Service</option>
+          <option value="legal">Legal Office</option>
+        </select>
+        <select id="language" class="sr-only" aria-hidden="true" tabindex="-1">
+          <option value="hinglish">Hinglish</option>
+          <option value="hindi">Hindi</option>
+          <option value="english">English</option>
+        </select>
+
+      </aside>
+
+      <!-- ─── Center: Conversation Panel ───────────────────────── -->
+      <main class="panel panel-conversation">
+
+        <!-- Slim header: scenario + status + timer + restart -->
+        <div class="conv-header">
+          <span class="conv-scenario" id="convScenarioLabel">Dental Clinic</span>
+          <div class="conv-header-right">
+            <span id="statusBadge" class="status-pill status-idle">Ready</span>
+            <span class="timer-pill"><strong id="demoTimer">05:00</strong></span>
+            <button id="restartDemoBtn" class="btn-icon-restart" type="button" title="Restart demo" aria-label="Restart demo">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                <path d="M11.5 2A6 6 0 1 0 12 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <polyline points="9,0 12,2.5 9,5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Restart
+            </button>
+          </div>
+        </div>
+
+        <!--
+          Conversation body.
+          .response-block is required: JS inserts .demo-meta (hidden) and
+          .chat-log (visible) before #responseText.
+          .idle-screen overlays this area when no messages exist yet.
+        -->
+        <div class="conv-body response-block" aria-live="polite" aria-label="Conversation">
+
+          <!-- Idle invitation: hidden once conversation starts -->
+          <div class="idle-screen">
+            <div class="voice-orb" aria-hidden="true">
+              <div class="orb-ring orb-r3"></div>
+              <div class="orb-ring orb-r2"></div>
+              <div class="orb-ring orb-r1"></div>
+              <div class="orb-core"></div>
+            </div>
+            <div class="idle-text">
+              <p class="idle-headline">Hear how Receptr handles a real call</p>
+              <p class="idle-caption">Tap Start Mic — speak in Hindi or English</p>
+            </div>
+            <div class="idle-chips" aria-label="Sample questions">
+              <button class="idle-chip starter-btn" type="button"
+                data-starter="idle_book" data-vertical="dental"
+                data-sample="Can I book an appointment for tomorrow?">
+                Book appointment
+              </button>
+              <button class="idle-chip starter-btn" type="button"
+                data-starter="idle_time" data-vertical="dental"
+                data-sample="What are your timings today?">
+                Ask timings
+              </button>
+              <button class="idle-chip starter-btn" type="button"
+                data-starter="idle_reschedule" data-vertical="dental"
+                data-sample="I need to reschedule my visit.">
+                Reschedule
+              </button>
+            </div>
+          </div>
+
+          <!-- JS inserts .demo-meta and .chat-log here, before #responseText -->
+          <pre id="responseText" class="sr-only">No response yet.</pre>
+          <audio id="audioPlayer"></audio>
+        </div>
+
+        <!-- Conversation footer: status + mic control + type-instead -->
+        <div class="conv-footer">
+
+          <div class="conv-status" aria-live="polite" aria-atomic="true">
+            <span id="statusHeading" class="conv-status-heading">Ready to start</span>
+            <span id="statusDetail" class="conv-status-detail">Tap Start Mic to begin a receptionist-style conversation.</span>
+          </div>
+
+          <div class="conv-controls">
+            <button id="sendBtn" class="btn btn-primary btn-mic" type="button">Start Mic</button>
+          </div>
+
+          <details class="type-panel">
+            <summary class="type-panel-trigger">
+              <span>Type instead of speaking</span>
+            </summary>
+            <div class="type-body">
+              <textarea
+                id="transcript"
+                rows="2"
+                placeholder="Type a question and tap Send…"
+              ></textarea>
+              <div class="type-actions">
+                <button id="sendTextBtn" class="btn btn-secondary" type="button">Send</button>
+                <button id="connectBtn" class="btn btn-ghost-sm" type="button">Reconnect</button>
+              </div>
+              <p id="promptHint" class="hint-text"></p>
+            </div>
+          </details>
+
+        </div>
+
+      </main>
+
+      <!-- ─── Right: Outcomes Panel ─────────────────────────────── -->
+      <aside class="panel panel-outcomes" aria-label="What Receptr captured">
+
+        <div class="outcomes-header">
+          <p class="outcomes-title">Captured</p>
+          <p class="outcomes-sub">Updates as the call progresses</p>
+        </div>
+
+        <div class="outcomes-list" id="outcomePanel">
+
+          <div class="oc-item" id="out-intent">
+            <span class="oc-label">Caller intent</span>
+            <span class="oc-value" id="out-intent-val"></span>
+          </div>
+
+          <div class="oc-item" id="out-name">
+            <span class="oc-label">Caller name</span>
+            <span class="oc-value" id="out-name-val"></span>
+          </div>
+
+          <div class="oc-item" id="out-date">
+            <span class="oc-label">Booking date</span>
+            <span class="oc-value" id="out-date-val"></span>
+          </div>
+
+          <div class="oc-item" id="out-time">
+            <span class="oc-label">Booking time</span>
+            <span class="oc-value" id="out-time-val"></span>
+          </div>
+
+          <div class="oc-item" id="out-extra">
+            <span class="oc-label">Service / detail</span>
+            <span class="oc-value" id="out-extra-val"></span>
+          </div>
+
+          <div class="oc-item" id="out-state">
+            <span class="oc-label">Call stage</span>
+            <span class="oc-value" id="out-state-val"></span>
+          </div>
+
+          <div class="oc-item" id="out-turns">
+            <span class="oc-label">Exchanges</span>
+            <span class="oc-value" id="out-turns-val">0 of 20</span>
+          </div>
+
+        </div>
+
+        <!-- Session summary — shown after demo ends -->
+        <section id="demoSummary" class="session-summary" hidden>
+          <div class="session-summary-hd">
+            <span class="session-check" aria-hidden="true">✓</span>
+            <p class="session-hd-text">Call handled</p>
+          </div>
+          <ul id="summaryList" class="session-list"></ul>
+          <a class="btn-outcome-cta" href="/" data-cta-type="contact">
+            Get Receptr for my business →
+          </a>
+        </section>
+
+      </aside>
+
+    </div><!-- /studio -->
+
     <script src="/demo/demo.js" defer></script>
   </body>
 </html>

@@ -1,4 +1,5 @@
 import { Intent } from '../nlu/intent-classifier';
+import { localizeDate, localizeTime } from './slot-display';
 
 export enum ConversationState {
   IDLE = 'IDLE',
@@ -16,6 +17,10 @@ export interface ConversationCollectedData {
   readonly date?: string;
   readonly time?: string;
   readonly service?: string;
+  readonly doctor?: string;
+  readonly carModel?: string;
+  readonly carProblem?: string;
+  readonly caseType?: string;
 }
 
 export interface ConversationContext {
@@ -35,7 +40,23 @@ export interface StateTransitionResult {
   readonly response: string;
 }
 
-const REQUIRED_BOOKING_FIELDS = ['name', 'date', 'time', 'phone'] as const;
+const DEFAULT_REQUIRED_FIELDS = ['name', 'date', 'time'] as const;
+
+const DEFAULT_QUESTION_GENERATOR = (field: string, data: ConversationCollectedData): string => {
+  const ack = data.name ? `ठीक है ${data.name} जी` : 'समझ गया';
+  switch (field) {
+    case 'name':    return 'आपका नाम क्या है?';
+    case 'date':    return `${ack}, आप कब आना चाहेंगे? कल या कोई और दिन?`;
+    case 'time':    return data.date
+      ? `${localizeDate(data.date)} note कर लिया। कितने बजे?`
+      : 'कितने बजे आना चाहेंगे? सुबह या शाम?';
+    case 'doctor':  return `${ack} — किस doctor को दिखाना है?`;
+    case 'carModel':   return `${ack}, आपकी गाड़ी का model क्या है?`;
+    case 'carProblem': return `${ack}, गाड़ी में क्या problem है?`;
+    case 'caseType':   return `${ack}, आपको किस प्रकार की legal सहायता चाहिए?`;
+    default: return `कृपया अपना ${field} बताइए।`;
+  }
+};
 
 const mergeCollectedData = (
   current: ConversationCollectedData,
@@ -45,14 +66,16 @@ const mergeCollectedData = (
   ...updates
 });
 
-const calculateMissingFields = (data: ConversationCollectedData): string[] => {
-  return REQUIRED_BOOKING_FIELDS.filter((field) => {
-    const key = field as keyof ConversationCollectedData;
-    return !data[key];
+const calculateMissingFields = (
+  data: ConversationCollectedData,
+  requiredFields: readonly string[]
+): string[] => {
+  return requiredFields.filter((field) => {
+    return !data[field as keyof ConversationCollectedData];
   });
 };
 
-const fallbackMessage = 'Maaf kijiye, samajh nahi aaya. Kripya dobara bataiye.';
+const fallbackMessage = 'माफ कीजिए, समझ नहीं आया। कृपया दोबारा बताइए।';
 
 export class ConversationStateMachine {
   public currentState: ConversationState = ConversationState.IDLE;
@@ -64,6 +87,16 @@ export class ConversationStateMachine {
 
   private previousState: ConversationState = ConversationState.IDLE;
   private readonly history: ConversationHistoryItem[] = [];
+  private readonly requiredFields: readonly string[];
+  private readonly questionGenerator: (field: string, data: ConversationCollectedData) => string;
+
+  public constructor(
+    requiredFields?: readonly string[],
+    questionGenerator?: (field: string, data: ConversationCollectedData) => string
+  ) {
+    this.requiredFields = requiredFields ?? DEFAULT_REQUIRED_FIELDS;
+    this.questionGenerator = questionGenerator ?? DEFAULT_QUESTION_GENERATOR;
+  }
 
   public getHistory(): readonly ConversationHistoryItem[] {
     return [...this.history];
@@ -80,7 +113,7 @@ export class ConversationStateMachine {
     };
     this.context = {
       ...this.context,
-      missingFields: calculateMissingFields(this.context.collectedData)
+      missingFields: calculateMissingFields(this.context.collectedData, this.requiredFields)
     };
 
     if (this.currentState === ConversationState.IDLE) {
@@ -88,11 +121,13 @@ export class ConversationStateMachine {
       this.currentState = ConversationState.GREETING;
       return {
         newState: this.currentState,
-        response: 'Namaste ji, BharatVoice mein aapka swagat hai. Main kaise madad kar sakta hoon?'
+        response: 'नमस्ते जी। मैं कैसे मदद कर सकता हूँ?'
       };
     }
 
-    if (this.shouldFallback(intent)) {
+    // Only fall back when intent is FALLBACK AND no useful entities were extracted.
+    // If the user gave slot values but used ambiguous phrasing, keep the current state.
+    if (this.shouldFallback(intent, entities)) {
       this.previousState = this.currentState;
       this.currentState = ConversationState.FALLBACK;
       this.context = { ...this.context, retryCount: this.context.retryCount + 1 };
@@ -108,7 +143,10 @@ export class ConversationStateMachine {
     }
 
     if (this.currentState === ConversationState.GREETING) {
-      if (intent === Intent.BOOK_APPOINTMENT) {
+      // Advance to slot-filling if: explicit booking intent, info-provision intent,
+      // or any slot values already merged in (entity-rich first turn).
+      const hasEntities = this.context.missingFields.length < this.requiredFields.length;
+      if (intent === Intent.BOOK_APPOINTMENT || intent === Intent.PROVIDE_INFO || hasEntities) {
         this.previousState = this.currentState;
         this.currentState = ConversationState.COLLECTING_INFO;
         return {
@@ -119,7 +157,7 @@ export class ConversationStateMachine {
 
       return {
         newState: this.currentState,
-        response: 'Ji, aap appointment, timing, ya charges ke baare mein puch sakte hain.'
+        response: 'जी, आप appointment, timing, या charges के बारे में पूछ सकते हैं।'
       };
     }
 
@@ -133,10 +171,9 @@ export class ConversationStateMachine {
 
       this.previousState = this.currentState;
       this.currentState = ConversationState.CONFIRMING;
-      const { name, date, time } = this.context.collectedData;
       return {
         newState: this.currentState,
-        response: `Theek hai, ${name ?? 'ji'}, ${date ?? 'selected date'} ko ${time ?? 'selected time'} baje. Sahi hai?`
+        response: this.getConfirmationPrompt()
       };
     }
 
@@ -147,7 +184,7 @@ export class ConversationStateMachine {
         this.currentState = ConversationState.CLOSING;
         return {
           newState: this.currentState,
-          response: 'Booking request process kar diya hai. Confirmation jaldi mil jayega. Dhanyavaad.'
+          response: 'Booking request process हो गई। Confirmation जल्दी मिलेगा। धन्यवाद!'
         };
       }
 
@@ -156,20 +193,20 @@ export class ConversationStateMachine {
         this.currentState = ConversationState.COLLECTING_INFO;
         return {
           newState: this.currentState,
-          response: 'Theek hai, correction bataiye. Main details update karta hoon.'
+          response: 'ठीक है, correction बताइए। मैं details update करता हूँ।'
         };
       }
 
       return {
         newState: this.currentState,
-        response: 'Kripya batayein, details sahi hain? Haan ya nahi.'
+        response: 'कृपया बताइए, details सही हैं? हाँ या नहीं।'
       };
     }
 
     if (this.currentState === ConversationState.CLOSING) {
       return {
         newState: this.currentState,
-        response: 'Agar aur madad chahiye ho to batayein.'
+        response: 'अगर और मदद चाहिए हो तो बताइए। धन्यवाद!'
       };
     }
 
@@ -180,22 +217,31 @@ export class ConversationStateMachine {
   }
 
   public getNextQuestion(): string {
-    if (this.context.missingFields.includes('name')) {
-      return 'Aapka naam kya hai?';
+    const nextField = this.context.missingFields[0];
+    if (!nextField) {
+      return 'कृपया details confirm कीजिए।';
     }
-    if (this.context.missingFields.includes('date')) {
-      return 'Kab aana pasand karenge?';
-    }
-    if (this.context.missingFields.includes('time')) {
-      return 'Kitne baje aayenge?';
-    }
-    if (this.context.missingFields.includes('phone')) {
-      return 'Aapka phone number kya hai?';
-    }
-    return 'Kripya details confirm kariye.';
+    return this.questionGenerator(nextField, this.context.collectedData);
   }
 
-  private shouldFallback(intent: Intent): boolean {
-    return intent === Intent.FALLBACK;
+  private getConfirmationPrompt(): string {
+    const data = this.context.collectedData;
+    const parts: string[] = [];
+    if (data.name)       parts.push(`नाम: ${data.name}`);
+    if (data.date)       parts.push(`तारीख: ${localizeDate(data.date)}`);
+    if (data.time)       parts.push(`समय: ${localizeTime(data.time)}`);
+    if (data.phone)      parts.push(`number: ${data.phone}`);
+    if (data.doctor)     parts.push(`doctor: ${data.doctor}`);
+    if (data.carModel)   parts.push(`गाड़ी: ${data.carModel}`);
+    if (data.carProblem) parts.push(`problem: ${data.carProblem}`);
+    if (data.caseType)   parts.push(`case: ${data.caseType}`);
+    const summary = parts.length > 0 ? parts.join(', ') : 'आपकी details';
+    return `ठीक है, confirm कर रहा हूँ — ${summary}। सही है?`;
+  }
+
+  // Only fall back when intent is genuinely unrecognised AND no slot values were extracted.
+  private shouldFallback(intent: Intent, entities: Partial<ConversationCollectedData>): boolean {
+    if (intent !== Intent.FALLBACK) return false;
+    return !Object.values(entities).some((v) => v !== undefined);
   }
 }
